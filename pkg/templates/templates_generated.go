@@ -3,6 +3,7 @@
 // linux/cloud-init/artifacts/apt-preferences
 // linux/cloud-init/artifacts/auditd-rules
 // linux/cloud-init/artifacts/cis.sh
+// linux/cloud-init/artifacts/containerd.service
 // linux/cloud-init/artifacts/cse_cmd.sh
 // linux/cloud-init/artifacts/cse_config.sh
 // linux/cloud-init/artifacts/cse_helpers.sh
@@ -113,7 +114,7 @@ func linuxCloudInitArtifactsAptPreferences() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/apt-preferences", size: 0, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/apt-preferences", size: 0, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -239,7 +240,7 @@ func linuxCloudInitArtifactsAuditdRules() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/auditd-rules", size: 7244, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/auditd-rules", size: 7244, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -333,7 +334,46 @@ func linuxCloudInitArtifactsCisSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cis.sh", size: 2800, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cis.sh", size: 2800, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _linuxCloudInitArtifactsContainerdService = []byte(`[Unit]
+Description=containerd container runtime
+After=network.target local-fs.target
+
+[Service]
+ExecStartPre=-/sbin/modprobe overlay
+ExecStart=/usr/local/bin/containerd
+
+Type=notify
+Delegate=yes
+KillMode=process
+Restart=always
+# Having non-zero Limit*s causes performance problems due to accounting overhead
+# in the kernel. We recommend using cgroups to do container-local accounting.
+LimitNPROC=infinity
+LimitCORE=infinity
+LimitNOFILE=1048576
+# Comment TasksMax if your systemd version does not supports it.
+# Only systemd 226 and above support this version.
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target`)
+
+func linuxCloudInitArtifactsContainerdServiceBytes() ([]byte, error) {
+	return _linuxCloudInitArtifactsContainerdService, nil
+}
+
+func linuxCloudInitArtifactsContainerdService() (*asset, error) {
+	bytes, err := linuxCloudInitArtifactsContainerdServiceBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/containerd.service", size: 616, mode: os.FileMode(420), modTime: time.Unix(1591057586, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -415,7 +455,7 @@ func linuxCloudInitArtifactsCse_cmdSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_cmd.sh", size: 4030, mode: os.FileMode(420), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_cmd.sh", size: 4030, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -860,7 +900,7 @@ func linuxCloudInitArtifactsCse_configSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 18802, mode: os.FileMode(493), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 18802, mode: os.FileMode(493), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1163,7 +1203,7 @@ func linuxCloudInitArtifactsCse_helpersSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_helpers.sh", size: 11725, mode: os.FileMode(493), modTime: time.Unix(1590617667, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_helpers.sh", size: 11725, mode: os.FileMode(493), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1181,6 +1221,14 @@ UBUNTU_RELEASE=$(lsb_release -r -s)
 
 removeMoby() {
     apt-get purge -y moby-engine moby-cli
+}
+
+removeContainerd() {
+    apt-get purge -y moby-containerd
+}
+
+cleanupContainerdDlFiles() {
+    rm -rf $CONTAINERD_DOWNLOADS_DIR
 }
 
 installDeps() {
@@ -1259,6 +1307,8 @@ installSGXDrivers() {
 installContainerRuntime() {
     if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
         installMoby
+    elif [[ "$CONTAINER_RUNTIME" == "containerd" ]]; then
+        installContainerd
     fi
 }
 
@@ -1268,17 +1318,38 @@ installMoby() {
         echo "dockerd $MOBY_VERSION is already installed, skipping Moby download"
     else
         removeMoby
-        retrycmd_if_failure_no_stats 120 5 25 curl https://packages.microsoft.com/config/ubuntu/${UBUNTU_RELEASE}/prod.list > /tmp/microsoft-prod.list || exit $ERR_MOBY_APT_LIST_TIMEOUT
-        retrycmd_if_failure 10 5 10 cp /tmp/microsoft-prod.list /etc/apt/sources.list.d/ || exit $ERR_MOBY_APT_LIST_TIMEOUT
-        retrycmd_if_failure_no_stats 120 5 25 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/microsoft.gpg || exit $ERR_MS_GPG_KEY_DOWNLOAD_TIMEOUT
-        retrycmd_if_failure 10 5 10 cp /tmp/microsoft.gpg /etc/apt/trusted.gpg.d/ || exit $ERR_MS_GPG_KEY_DOWNLOAD_TIMEOUT
-        apt_get_update || exit $ERR_APT_UPDATE_TIMEOUT
+        getMobyPkg
         MOBY_CLI=${MOBY_VERSION}
         if [[ "${MOBY_CLI}" == "3.0.4" ]]; then
             MOBY_CLI="3.0.3"
         fi
         apt_get_install 20 30 120 moby-engine=${MOBY_VERSION}* moby-cli=${MOBY_CLI}* --allow-downgrades || exit $ERR_MOBY_INSTALL_TIMEOUT
     fi
+}
+
+installContainerd() {
+  removeMoby
+    CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||')
+    if [[ "$CURRENT_VERSION" == "${CONTAINERD_VERSION}" ]]; then
+        echo "containerd is already installed, skipping install"
+    else
+        removeMoby && removeContainerd
+        getMobyPkg
+        MOBY_CLI=${MOBY_VERSION}
+        if [[ "${MOBY_CLI}" == "3.0.4" ]]; then
+            MOBY_CLI="3.0.3"
+        fi
+        apt_get_install 20 30 120 moby-containerd=${CONTAINERD_VERSION}* moby-cli=${MOBY_CLI}* --allow-downgrades || exit $ERR_MOBY_INSTALL_TIMEOUT
+    fi
+    rm -Rf $CONTAINERD_DOWNLOADS_DIR &
+}
+
+getMobyPkg() {
+    retrycmd_if_failure_no_stats 120 5 25 curl https://packages.microsoft.com/config/ubuntu/${UBUNTU_RELEASE}/prod.list > /tmp/microsoft-prod.list || exit $ERR_MOBY_APT_LIST_TIMEOUT
+    retrycmd_if_failure 10 5 10 cp /tmp/microsoft-prod.list /etc/apt/sources.list.d/ || exit $ERR_MOBY_APT_LIST_TIMEOUT
+    retrycmd_if_failure_no_stats 120 5 25 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/microsoft.gpg || exit $ERR_MS_GPG_KEY_DOWNLOAD_TIMEOUT
+    retrycmd_if_failure 10 5 10 cp /tmp/microsoft.gpg /etc/apt/trusted.gpg.d/ || exit $ERR_MS_GPG_KEY_DOWNLOAD_TIMEOUT
+    apt_get_update || exit $ERR_APT_UPDATE_TIMEOUT
 }
 
 installKataContainersRuntime() {
@@ -1345,25 +1416,6 @@ installAzureCNI() {
     chmod 755 $CNI_CONFIG_DIR
     mkdir -p $CNI_BIN_DIR
     tar -xzf "$CNI_DOWNLOADS_DIR/${CNI_TGZ_TMP}" -C $CNI_BIN_DIR
-}
-
-installContainerd() {
-    CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||')
-    if [[ "$CURRENT_VERSION" == "${CONTAINERD_VERSION}" ]]; then
-        echo "containerd is already installed, skipping install"
-    else
-        CONTAINERD_TGZ_TMP="cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
-        rm -Rf /usr/bin/containerd
-        rm -Rf /var/lib/docker/containerd
-        rm -Rf /run/docker/containerd
-        if [[ ! -f "$CONTAINERD_DOWNLOADS_DIR/${CONTAINERD_TGZ_TMP}" ]]; then
-            downloadContainerd
-        fi
-        tar -xzf "$CONTAINERD_DOWNLOADS_DIR/$CONTAINERD_TGZ_TMP" -C /
-        sed -i '/\[Service\]/a ExecStartPost=\/sbin\/iptables -P FORWARD ACCEPT -w' /etc/systemd/system/containerd.service
-        echo "Successfully installed cri-containerd..."
-    fi
-    rm -Rf $CONTAINERD_DOWNLOADS_DIR &
 }
 
 installImg() {
@@ -1456,7 +1508,7 @@ func linuxCloudInitArtifactsCse_installSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_install.sh", size: 12277, mode: os.FileMode(493), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_install.sh", size: 12279, mode: os.FileMode(493), modTime: time.Unix(1591057587, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1550,10 +1602,6 @@ installContainerRuntime
 
 installNetworkPlugin
 
-{{- if NeedsContainerd}}
-installContainerd
-{{end}}
-
 {{- if HasNSeriesSKU}}
 if [[ "${GPU_NODE}" = true ]]; then
     if $FULL_INSTALL_REQUIRED; then
@@ -1591,16 +1639,15 @@ ensureDocker
 {{else if IsKataContainerRuntime}}
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
-fi
+fi 
+{{else if NeedsContainerd}}
+ensureContainerd
 {{end}}
 
 configureK8s
 
 configureCNI
 
-{{- if NeedsContainerd}}
-ensureContainerd
-{{end}}
 
 {{/* configure and enable dhcpv6 for dual stack feature */}}
 {{- if IsIPv6DualStackFeatureEnabled}}
@@ -1685,7 +1732,7 @@ func linuxCloudInitArtifactsCse_mainSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5577, mode: os.FileMode(493), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5521, mode: os.FileMode(493), modTime: time.Unix(1591057587, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1713,7 +1760,7 @@ func linuxCloudInitArtifactsDhcpv6Service() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/dhcpv6.service", size: 174, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/dhcpv6.service", size: 174, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1739,7 +1786,7 @@ func linuxCloudInitArtifactsDockerMonitorService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker-monitor.service", size: 223, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker-monitor.service", size: 223, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1763,7 +1810,7 @@ func linuxCloudInitArtifactsDockerMonitorTimer() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker-monitor.timer", size: 154, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker-monitor.timer", size: 154, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1783,7 +1830,7 @@ func linuxCloudInitArtifactsDocker_clear_mount_propagation_flagsConf() (*asset, 
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker_clear_mount_propagation_flags.conf", size: 33, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/docker_clear_mount_propagation_flags.conf", size: 33, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1827,7 +1874,7 @@ func linuxCloudInitArtifactsEnableDhcpv6Sh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/enable-dhcpv6.sh", size: 707, mode: os.FileMode(493), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/enable-dhcpv6.sh", size: 707, mode: os.FileMode(493), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1846,7 +1893,7 @@ func linuxCloudInitArtifactsEtcIssue() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etc-issue", size: 67, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etc-issue", size: 67, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1865,7 +1912,7 @@ func linuxCloudInitArtifactsEtcIssueNet() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etc-issue.net", size: 67, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etc-issue.net", size: 67, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1900,7 +1947,7 @@ func linuxCloudInitArtifactsEtcdService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etcd.service", size: 468, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/etcd.service", size: 468, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1996,7 +2043,7 @@ func linuxCloudInitArtifactsHealthMonitorSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/health-monitor.sh", size: 2237, mode: os.FileMode(493), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/health-monitor.sh", size: 2237, mode: os.FileMode(493), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2042,7 +2089,7 @@ func linuxCloudInitArtifactsInitAksCustomCloudSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/init-aks-custom-cloud.sh", size: 1052, mode: os.FileMode(420), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/init-aks-custom-cloud.sh", size: 1052, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2078,7 +2125,7 @@ func linuxCloudInitArtifactsKmsService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kms.service", size: 463, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kms.service", size: 463, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2102,7 +2149,7 @@ func linuxCloudInitArtifactsKubeletMonitorService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet-monitor.service", size: 209, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet-monitor.service", size: 209, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2124,7 +2171,7 @@ func linuxCloudInitArtifactsKubeletMonitorTimer() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet-monitor.timer", size: 149, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet-monitor.timer", size: 149, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2180,7 +2227,7 @@ func linuxCloudInitArtifactsKubeletService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet.service", size: 1776, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/kubelet.service", size: 1776, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2205,7 +2252,7 @@ func linuxCloudInitArtifactsLabelNodesService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/label-nodes.service", size: 186, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/label-nodes.service", size: 186, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2240,7 +2287,7 @@ func linuxCloudInitArtifactsLabelNodesSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/label-nodes.sh", size: 788, mode: os.FileMode(493), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/label-nodes.sh", size: 788, mode: os.FileMode(493), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2274,7 +2321,7 @@ func linuxCloudInitArtifactsModprobeCisConf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/modprobe-CIS.conf", size: 640, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/modprobe-CIS.conf", size: 640, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2298,7 +2345,7 @@ func linuxCloudInitArtifactsNvidiaDevicePluginService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-device-plugin.service", size: 183, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-device-plugin.service", size: 183, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2329,7 +2376,7 @@ func linuxCloudInitArtifactsNvidiaDockerDaemonJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-docker-daemon.json", size: 304, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-docker-daemon.json", size: 304, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2354,7 +2401,7 @@ func linuxCloudInitArtifactsNvidiaModprobeService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-modprobe.service", size: 242, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/nvidia-modprobe.service", size: 242, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2399,7 +2446,7 @@ func linuxCloudInitArtifactsPamDCommonAuth() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-common-auth", size: 1363, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-common-auth", size: 1363, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2454,7 +2501,7 @@ func linuxCloudInitArtifactsPamDCommonPassword() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-common-password", size: 1709, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-common-password", size: 1709, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2532,7 +2579,7 @@ func linuxCloudInitArtifactsPamDSu() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-su", size: 2304, mode: os.FileMode(420), modTime: time.Unix(1587682173, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pam-d-su", size: 2304, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2553,7 +2600,7 @@ func linuxCloudInitArtifactsProfileDCisSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/profile-d-cis.sh", size: 84, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/profile-d-cis.sh", size: 84, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2576,7 +2623,7 @@ func linuxCloudInitArtifactsPwqualityCisConf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pwquality-CIS.conf", size: 124, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/pwquality-CIS.conf", size: 124, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2608,7 +2655,7 @@ func linuxCloudInitArtifactsRsyslogD60CisConf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/rsyslog-d-60-CIS.conf", size: 881, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/rsyslog-d-60-CIS.conf", size: 881, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2635,7 +2682,7 @@ func linuxCloudInitArtifactsSetupCustomSearchDomainsSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/setup-custom-search-domains.sh", size: 553, mode: os.FileMode(493), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/setup-custom-search-domains.sh", size: 553, mode: os.FileMode(493), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2737,7 +2784,7 @@ func linuxCloudInitArtifactsSshd_config() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sshd_config", size: 2565, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sshd_config", size: 2565, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2849,7 +2896,7 @@ func linuxCloudInitArtifactsSshd_config_1604() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sshd_config_1604", size: 2865, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sshd_config_1604", size: 2865, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2879,7 +2926,7 @@ func linuxCloudInitArtifactsSysFsBpfMount() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sys-fs-bpf.mount", size: 236, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sys-fs-bpf.mount", size: 236, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -2923,7 +2970,7 @@ func linuxCloudInitArtifactsSysctlD60CisConf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sysctl-d-60-CIS.conf", size: 1210, mode: os.FileMode(420), modTime: time.Unix(1588821182, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/sysctl-d-60-CIS.conf", size: 1210, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3280,7 +3327,7 @@ func linuxCloudInitNodecustomdataYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 8969, mode: os.FileMode(420), modTime: time.Unix(1590539145, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 8969, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3297,7 +3344,7 @@ func windowsCsecmdPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/csecmd.ps1", size: 879, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/csecmd.ps1", size: 879, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3453,7 +3500,7 @@ func windowsKuberneteswindowsfunctionsPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/kuberneteswindowsfunctions.ps1", size: 4993, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/kuberneteswindowsfunctions.ps1", size: 4993, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3807,7 +3854,7 @@ func windowsKuberneteswindowssetupPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/kuberneteswindowssetup.ps1", size: 14168, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/kuberneteswindowssetup.ps1", size: 14168, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4081,7 +4128,7 @@ func windowsWindowsazurecnifuncPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowsazurecnifunc.ps1", size: 11014, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowsazurecnifunc.ps1", size: 11014, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4114,7 +4161,7 @@ func windowsWindowsazurecnifuncTestsPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowsazurecnifunc.tests.ps1", size: 710, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowsazurecnifunc.tests.ps1", size: 710, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4155,7 +4202,7 @@ func windowsWindowscnifuncPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowscnifunc.ps1", size: 815, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowscnifunc.ps1", size: 815, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4283,7 +4330,7 @@ func windowsWindowsconfigfuncPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowsconfigfunc.ps1", size: 5342, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowsconfigfunc.ps1", size: 5342, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -4359,7 +4406,7 @@ func windowsWindowsinstallopensshfuncPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowsinstallopensshfunc.ps1", size: 1883, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowsinstallopensshfunc.ps1", size: 1883, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5067,7 +5114,7 @@ func windowsWindowskubeletfuncPs1() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "windows/windowskubeletfunc.ps1", size: 24784, mode: os.FileMode(420), modTime: time.Unix(1585343368, 0)}
+	info := bindataFileInfo{name: "windows/windowskubeletfunc.ps1", size: 24784, mode: os.FileMode(420), modTime: time.Unix(1589230514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5127,6 +5174,7 @@ var _bindata = map[string]func() (*asset, error){
 	"linux/cloud-init/artifacts/apt-preferences":                           linuxCloudInitArtifactsAptPreferences,
 	"linux/cloud-init/artifacts/auditd-rules":                              linuxCloudInitArtifactsAuditdRules,
 	"linux/cloud-init/artifacts/cis.sh":                                    linuxCloudInitArtifactsCisSh,
+	"linux/cloud-init/artifacts/containerd.service":                        linuxCloudInitArtifactsContainerdService,
 	"linux/cloud-init/artifacts/cse_cmd.sh":                                linuxCloudInitArtifactsCse_cmdSh,
 	"linux/cloud-init/artifacts/cse_config.sh":                             linuxCloudInitArtifactsCse_configSh,
 	"linux/cloud-init/artifacts/cse_helpers.sh":                            linuxCloudInitArtifactsCse_helpersSh,
@@ -5222,6 +5270,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				"apt-preferences":                           &bintree{linuxCloudInitArtifactsAptPreferences, map[string]*bintree{}},
 				"auditd-rules":                              &bintree{linuxCloudInitArtifactsAuditdRules, map[string]*bintree{}},
 				"cis.sh":                                    &bintree{linuxCloudInitArtifactsCisSh, map[string]*bintree{}},
+				"containerd.service":                        &bintree{linuxCloudInitArtifactsContainerdService, map[string]*bintree{}},
 				"cse_cmd.sh":                                &bintree{linuxCloudInitArtifactsCse_cmdSh, map[string]*bintree{}},
 				"cse_config.sh":                             &bintree{linuxCloudInitArtifactsCse_configSh, map[string]*bintree{}},
 				"cse_helpers.sh":                            &bintree{linuxCloudInitArtifactsCse_helpersSh, map[string]*bintree{}},

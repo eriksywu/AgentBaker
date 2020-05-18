@@ -87,10 +87,6 @@ installContainerRuntime
 
 installNetworkPlugin
 
-{{- if NeedsContainerd}}
-installContainerd
-{{end}}
-
 {{- if HasNSeriesSKU}}
 if [[ "${GPU_NODE}" = true ]]; then
     if $FULL_INSTALL_REQUIRED; then
@@ -128,16 +124,15 @@ ensureDocker
 {{else if IsKataContainerRuntime}}
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
-fi
+fi 
+{{else if NeedsContainerd}}
+ensureContainerd
 {{end}}
 
 configureK8s
 
 configureCNI
 
-{{- if NeedsContainerd}}
-ensureContainerd
-{{end}}
 
 {{/* configure and enable dhcpv6 for dual stack feature */}}
 {{- if IsIPv6DualStackFeatureEnabled}}
