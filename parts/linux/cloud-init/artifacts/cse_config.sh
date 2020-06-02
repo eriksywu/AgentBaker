@@ -196,12 +196,22 @@ configureCNIIPTables() {
     fi
 }
 
-{{if NeedsContainerd}}
-ensureContainerd() {
-    echo "Starting cri-containerd service..."
-    systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
+ensureContainerRuntime() {
+    if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
+        ensureDocker
+    elif [[ "$CONTAINER_RUNTIME" == "containerd" ]]; then
+        ensureContainerd
+    fi
 }
-{{end}}
+
+ensureContainerd() {
+  wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/exec_start.conf || exit $ERR_FILE_WATCH_TIMEOUT
+  wait_for_file 1200 1 /etc/containerd/config.toml || exit $ERR_FILE_WATCH_TIMEOUT
+  {{- if HasKubeReservedCgroup}}
+  wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/kubereserved-slice.conf|| exit $ERR_FILE_WATCH_TIMEOUT
+  {{- end}}
+  systemctlEnableAndStart containerd || exit {{GetCSEErrorCode "ERR_SYSTEMCTL_START_FAIL"}}
+}
 
 ensureDocker() {
     DOCKER_SERVICE_EXEC_START_FILE=/etc/systemd/system/docker.service.d/exec_start.conf

@@ -658,12 +658,22 @@ configureCNIIPTables() {
     fi
 }
 
-{{if NeedsContainerd}}
-ensureContainerd() {
-    echo "Starting cri-containerd service..."
-    systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
+ensureContainerRuntime() {
+    if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
+        ensureDocker
+    elif [[ "$CONTAINER_RUNTIME" == "containerd" ]]; then
+        ensureContainerd
+    fi
 }
-{{end}}
+
+ensureContainerd() {
+  wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/exec_start.conf || exit $ERR_FILE_WATCH_TIMEOUT
+  wait_for_file 1200 1 /etc/containerd/config.toml || exit $ERR_FILE_WATCH_TIMEOUT
+  {{- if HasKubeReservedCgroup}}
+  wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/kubereserved-slice.conf|| exit $ERR_FILE_WATCH_TIMEOUT
+  {{- end}}
+  systemctlEnableAndStart containerd || exit {{GetCSEErrorCode "ERR_SYSTEMCTL_START_FAIL"}}
+}
 
 ensureDocker() {
     DOCKER_SERVICE_EXEC_START_FILE=/etc/systemd/system/docker.service.d/exec_start.conf
@@ -900,7 +910,7 @@ func linuxCloudInitArtifactsCse_configSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 18802, mode: os.FileMode(493), modTime: time.Unix(1591057585, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 19296, mode: os.FileMode(493), modTime: time.Unix(1591135205, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1634,14 +1644,12 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 {{GetCustomSearchDomainsCSEScriptFilepath}} > /opt/azure/containers/setup-custom-search-domain.log 2>&1 || exit $ERR_CUSTOM_SEARCH_DOMAINS_FAIL
 {{end}}
 
-{{- if IsDockerContainerRuntime}}
-ensureDocker
-{{else if IsKataContainerRuntime}}
+{{- if IsKataContainerRuntime}}
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
 fi 
-{{else if NeedsContainerd}}
-ensureContainerd
+{{else}}
+ensureContainerRuntime
 {{end}}
 
 configureK8s
@@ -1732,7 +1740,7 @@ func linuxCloudInitArtifactsCse_mainSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5521, mode: os.FileMode(493), modTime: time.Unix(1591057587, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5458, mode: os.FileMode(493), modTime: time.Unix(1591135063, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
