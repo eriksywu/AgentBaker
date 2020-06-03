@@ -669,9 +669,6 @@ ensureContainerRuntime() {
 ensureContainerd() {
   wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/exec_start.conf || exit $ERR_FILE_WATCH_TIMEOUT
   wait_for_file 1200 1 /etc/containerd/config.toml || exit $ERR_FILE_WATCH_TIMEOUT
-  {{- if HasKubeReservedCgroup}}
-  wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/kubereserved-slice.conf|| exit $ERR_FILE_WATCH_TIMEOUT
-  {{- end}}
   systemctlEnableAndStart containerd || exit {{GetCSEErrorCode "ERR_SYSTEMCTL_START_FAIL"}}
 }
 
@@ -910,7 +907,7 @@ func linuxCloudInitArtifactsCse_configSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 19296, mode: os.FileMode(493), modTime: time.Unix(1591135205, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 19132, mode: os.FileMode(493), modTime: time.Unix(1591146203, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
