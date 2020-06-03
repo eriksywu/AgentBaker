@@ -118,10 +118,14 @@ installMoby() {
 }
 
 installContainerd() {
-  removeMoby
+    #default installation of moby-docker pkg contains containerd.
     CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||')
     if [[ "$CURRENT_VERSION" == "${CONTAINERD_VERSION}" ]]; then
         echo "containerd is already installed, skipping install"
+    # only update containerd if desired version is 1.3.2-1.3.4
+    # there only exists moby-containerd packages of versions 1.3.2, 1.3.3 and 1.3.4
+    elif [[ ! "${CONTAINERD_VERSION}" =~ 1\.3\.[234].* ]]; then
+        echo "desired containerd version ${CONTAINERD_VERSION} not available. defaulting to version ${CURRENT_VERSION}"
     else
         removeMoby && removeContainerd
         getMobyPkg

@@ -669,7 +669,7 @@ ensureContainerRuntime() {
 ensureContainerd() {
   wait_for_file 1200 1 /etc/systemd/system/containerd.service.d/exec_start.conf || exit $ERR_FILE_WATCH_TIMEOUT
   wait_for_file 1200 1 /etc/containerd/config.toml || exit $ERR_FILE_WATCH_TIMEOUT
-  systemctlEnableAndStart containerd || exit {{GetCSEErrorCode "ERR_SYSTEMCTL_START_FAIL"}}
+  systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
 }
 
 ensureDocker() {
@@ -907,7 +907,7 @@ func linuxCloudInitArtifactsCse_configSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 19132, mode: os.FileMode(493), modTime: time.Unix(1591146203, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_config.sh", size: 19111, mode: os.FileMode(493), modTime: time.Unix(1591222470, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1335,10 +1335,14 @@ installMoby() {
 }
 
 installContainerd() {
-  removeMoby
+    #default installation of moby-docker pkg contains containerd.
     CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||')
     if [[ "$CURRENT_VERSION" == "${CONTAINERD_VERSION}" ]]; then
         echo "containerd is already installed, skipping install"
+    # only update containerd if desired version is 1.3.2-1.3.4
+    # there only exists moby-containerd packages of versions 1.3.2, 1.3.3 and 1.3.4
+    elif [[ ! "${CONTAINERD_VERSION}" =~ 1\.3\.[234].* ]]; then
+        echo "desired containerd version ${CONTAINERD_VERSION} not available. defaulting to version ${CURRENT_VERSION}"
     else
         removeMoby && removeContainerd
         getMobyPkg
@@ -1515,7 +1519,7 @@ func linuxCloudInitArtifactsCse_installSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_install.sh", size: 12279, mode: os.FileMode(493), modTime: time.Unix(1591057587, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_install.sh", size: 12663, mode: os.FileMode(493), modTime: time.Unix(1591216590, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1645,14 +1649,18 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
 fi 
-{{else}}
-ensureContainerRuntime
+
+{{- if IsDockerContainerRuntime}}
+ensureDocker
 {{end}}
 
 configureK8s
 
 configureCNI
 
+{{- if NeedsContainerd}}
+ensureContainerd
+{{end}}
 
 {{/* configure and enable dhcpv6 for dual stack feature */}}
 {{- if IsIPv6DualStackFeatureEnabled}}
@@ -1737,7 +1745,7 @@ func linuxCloudInitArtifactsCse_mainSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5458, mode: os.FileMode(493), modTime: time.Unix(1591135063, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5524, mode: os.FileMode(493), modTime: time.Unix(1591221614, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3221,7 +3229,14 @@ write_files:
             }
           }]
       }
-    {{end}}
+
+- path: /etc/systemd/system/containerd.service.d/exec_start.conf
+  permissions: "0644"
+  owner: root
+  content: |
+    [Service]
+    ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
+    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}
@@ -3332,7 +3347,7 @@ func linuxCloudInitNodecustomdataYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 8969, mode: os.FileMode(420), modTime: time.Unix(1591057585, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 9146, mode: os.FileMode(420), modTime: time.Unix(1591224729, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

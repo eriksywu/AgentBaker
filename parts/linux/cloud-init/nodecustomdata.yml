@@ -239,7 +239,14 @@ write_files:
             }
           }]
       }
-    {{end}}
+
+- path: /etc/systemd/system/containerd.service.d/exec_start.conf
+  permissions: "0644"
+  owner: root
+  content: |
+    [Service]
+    ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
+    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}

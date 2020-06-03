@@ -123,14 +123,18 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
 fi 
-{{else}}
-ensureContainerRuntime
+
+{{- if IsDockerContainerRuntime}}
+ensureDocker
 {{end}}
 
 configureK8s
 
 configureCNI
 
+{{- if NeedsContainerd}}
+ensureContainerd
+{{end}}
 
 {{/* configure and enable dhcpv6 for dual stack feature */}}
 {{- if IsIPv6DualStackFeatureEnabled}}
