@@ -246,7 +246,6 @@ write_files:
   content: |
     [Service]
     ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
-    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}

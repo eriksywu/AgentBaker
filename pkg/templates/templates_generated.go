@@ -1649,6 +1649,7 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 if grep -q vmx /proc/cpuinfo; then
     installKataContainersRuntime
 fi 
+{{end}}
 
 {{- if IsDockerContainerRuntime}}
 ensureDocker
@@ -1745,7 +1746,7 @@ func linuxCloudInitArtifactsCse_mainSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5524, mode: os.FileMode(493), modTime: time.Unix(1591221614, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/cse_main.sh", size: 5532, mode: os.FileMode(493), modTime: time.Unix(1591229108, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3236,7 +3237,6 @@ write_files:
   content: |
     [Service]
     ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
-    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}
@@ -3334,8 +3334,7 @@ write_files:
 runcmd:
 - set -x
 - . {{GetCSEHelpersScriptFilepath}}
-- aptmarkWALinuxAgent hold{{GetKubernetesAgentPreprovisionYaml .}}
-`)
+- aptmarkWALinuxAgent hold{{GetKubernetesAgentPreprovisionYaml .}}`)
 
 func linuxCloudInitNodecustomdataYmlBytes() ([]byte, error) {
 	return _linuxCloudInitNodecustomdataYml, nil
@@ -3347,7 +3346,7 @@ func linuxCloudInitNodecustomdataYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 9146, mode: os.FileMode(420), modTime: time.Unix(1591224729, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 9136, mode: os.FileMode(420), modTime: time.Unix(1591230580, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
