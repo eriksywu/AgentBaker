@@ -216,6 +216,8 @@ write_files:
     {{if IsKubenet }}
     [plugins.cri.cni]
     conf_template = "/etc/containerd/kubenet_template.conf"
+    {{end}}
+    #EOF
 
 - path: /etc/containerd/kubenet_template.conf
   permissions: "0644"
@@ -240,12 +242,19 @@ write_files:
           }]
       }
 
+- path: /etc/systemd/system/containerd.service
+  permissions: "0644"
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "containerdSystemdService"}}
+
 - path: /etc/systemd/system/containerd.service.d/exec_start.conf
   permissions: "0644"
   owner: root
   content: |
     [Service]
     ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
+    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}

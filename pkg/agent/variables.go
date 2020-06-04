@@ -4,10 +4,11 @@
 package agent
 
 import (
+	"strconv"
+
 	"github.com/Azure/aks-engine/pkg/api"
 	"github.com/Azure/aks-engine/pkg/api/common"
 	"github.com/Azure/go-autorest/autorest/to"
-	"strconv"
 )
 
 func getCustomDataVariables(cs *api.ContainerService) paramsMap {
@@ -23,6 +24,7 @@ func getCustomDataVariables(cs *api.ContainerService) paramsMap {
 			"kubeletSystemdService":     getBase64EncodedGzippedCustomScript(kubeletSystemdService, cs),
 			"systemdBPFMount":           getBase64EncodedGzippedCustomScript(systemdBPFMount, cs),
 			"initAKSCustomCloud":        getBase64EncodedGzippedCustomScript(initAKSCustomCloudScript, cs),
+			"containerdSystemdService":  getBase64EncodedGzippedCustomScript(containerdSystemdService, cs),
 		},
 	}
 

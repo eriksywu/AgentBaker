@@ -340,28 +340,15 @@ func linuxCloudInitArtifactsCisSh() (*asset, error) {
 }
 
 var _linuxCloudInitArtifactsContainerdService = []byte(`[Unit]
-Description=containerd container runtime
-After=network.target local-fs.target
+Description=containerd daemon
 
 [Service]
-ExecStartPre=-/sbin/modprobe overlay
-ExecStart=/usr/local/bin/containerd
-
-Type=notify
-Delegate=yes
-KillMode=process
-Restart=always
-# Having non-zero Limit*s causes performance problems due to accounting overhead
-# in the kernel. We recommend using cgroups to do container-local accounting.
-LimitNPROC=infinity
-LimitCORE=infinity
-LimitNOFILE=1048576
-# Comment TasksMax if your systemd version does not supports it.
-# Only systemd 226 and above support this version.
-TasksMax=infinity
+ExecStart=/usr/bin/containerd
 
 [Install]
-WantedBy=multi-user.target`)
+WantedBy=multi-user.target
+
+#EOF`)
 
 func linuxCloudInitArtifactsContainerdServiceBytes() ([]byte, error) {
 	return _linuxCloudInitArtifactsContainerdService, nil
@@ -373,7 +360,7 @@ func linuxCloudInitArtifactsContainerdService() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/artifacts/containerd.service", size: 616, mode: os.FileMode(420), modTime: time.Unix(1591057586, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/artifacts/containerd.service", size: 121, mode: os.FileMode(420), modTime: time.Unix(1591244535, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -3207,6 +3194,8 @@ write_files:
     {{if IsKubenet }}
     [plugins.cri.cni]
     conf_template = "/etc/containerd/kubenet_template.conf"
+    {{end}}
+    #EOF
 
 - path: /etc/containerd/kubenet_template.conf
   permissions: "0644"
@@ -3231,12 +3220,19 @@ write_files:
           }]
       }
 
+- path: /etc/systemd/system/containerd.service
+  permissions: "0644"
+  owner: root
+  content: !!binary |
+    {{GetVariableProperty "cloudInitData" "containerdSystemdService"}}
+
 - path: /etc/systemd/system/containerd.service.d/exec_start.conf
   permissions: "0644"
   owner: root
   content: |
     [Service]
     ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
+    #EOF
 {{end}}
 
 {{if IsNSeriesSKU .}}
@@ -3334,7 +3330,8 @@ write_files:
 runcmd:
 - set -x
 - . {{GetCSEHelpersScriptFilepath}}
-- aptmarkWALinuxAgent hold{{GetKubernetesAgentPreprovisionYaml .}}`)
+- aptmarkWALinuxAgent hold{{GetKubernetesAgentPreprovisionYaml .}}
+`)
 
 func linuxCloudInitNodecustomdataYmlBytes() ([]byte, error) {
 	return _linuxCloudInitNodecustomdataYml, nil
@@ -3346,7 +3343,7 @@ func linuxCloudInitNodecustomdataYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 9136, mode: os.FileMode(420), modTime: time.Unix(1591230580, 0)}
+	info := bindataFileInfo{name: "linux/cloud-init/nodecustomdata.yml", size: 9344, mode: os.FileMode(420), modTime: time.Unix(1591243783, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
