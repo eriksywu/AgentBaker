@@ -266,6 +266,7 @@ ensureContainerRuntime() {
     fi
     {{if NeedsContainerd}}
         ensureContainerd
+        ensureTeleport
     {{end}}
 }
 
@@ -279,6 +280,13 @@ ensureContainerd() {
   {{end}}
   systemctl is-active --quiet docker && (systemctl_disable 20 30 120 docker || exit $ERR_SYSTEMD_DOCKER_STOP_FAIL)
   systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
+}
+
+ensureTeleport() {
+    containerdBinary=$(which containerd)
+    systemctlDisableAndStop containerd || exit $ERR_SYSTEMCTL_START_FAIL
+    cp -f ${TELPORT_DOWNLOAD_DIR}/usr/local/bin/containerd $containerdBinary
+    systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
 }
 {{end}}
 

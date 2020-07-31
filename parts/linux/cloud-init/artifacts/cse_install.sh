@@ -6,6 +6,7 @@ CNI_CONFIG_DIR="/etc/cni/net.d"
 CNI_BIN_DIR="/opt/cni/bin"
 CNI_DOWNLOADS_DIR="/opt/cni/downloads"
 CONTAINERD_DOWNLOADS_DIR="/opt/containerd/downloads"
+TELEPORT_DOWNLOADS_DIR="/opt/teleport/downloads"
 K8S_DOWNLOADS_DIR="/opt/kubernetes/downloads"
 UBUNTU_RELEASE=$(lsb_release -r -s)
 
@@ -99,7 +100,7 @@ installContainerRuntime() {
         installMoby
     fi
     {{if NeedsContainerd}}
-        installContainerd
+        installTeleport
     {{end}}
 }
 
@@ -136,6 +137,11 @@ installContainerd() {
         rm -Rf $CONTAINERD_DOWNLOADS_DIR &
     fi  
 }
+
+installTeleport() {
+    downloadTeleport
+    tar xvzf ${TELPORT_DOWNLOAD_DIR}/teleport-containerd.tar.gz
+}
 {{end}}
 
 getMobyPkg() {
@@ -171,6 +177,11 @@ downloadContainerd() {
     mkdir -p $CONTAINERD_DOWNLOADS_DIR
     CONTAINERD_TGZ_TMP=${CONTAINERD_DOWNLOAD_URL##*/}
     retrycmd_get_tarball 120 5 "$CONTAINERD_DOWNLOADS_DIR/${CONTAINERD_TGZ_TMP}" ${CONTAINERD_DOWNLOAD_URL} || exit $ERR_CONTAINERD_DOWNLOAD_TIMEOUT
+}
+
+downloadTeleport() {
+    mkdir -p $TELEPORT_DOWNLOADS_DIR
+    wget "https://teleportcontainerd.blob.core.windows.net/binaries/teleport-containerd.tar.gz" -P $TELEPORT_DOWNLOADS_DIR
 }
 
 installCNI() {

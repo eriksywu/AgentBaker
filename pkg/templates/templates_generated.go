@@ -718,6 +718,7 @@ ensureContainerRuntime() {
     fi
     {{if NeedsContainerd}}
         ensureContainerd
+        ensureTeleport
     {{end}}
 }
 
@@ -731,6 +732,13 @@ ensureContainerd() {
   {{end}}
   systemctl is-active --quiet docker && (systemctl_disable 20 30 120 docker || exit $ERR_SYSTEMD_DOCKER_STOP_FAIL)
   systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
+}
+
+ensureTeleport() {
+    containerdBinary=$(which containerd)
+    systemctlDisableAndStop containerd || exit $ERR_SYSTEMCTL_START_FAIL
+    cp -f ${TELPORT_DOWNLOAD_DIR}/usr/local/bin/containerd $containerdBinary
+    systemctlEnableAndStart containerd || exit $ERR_SYSTEMCTL_START_FAIL
 }
 {{end}}
 
@@ -1333,6 +1341,7 @@ CNI_CONFIG_DIR="/etc/cni/net.d"
 CNI_BIN_DIR="/opt/cni/bin"
 CNI_DOWNLOADS_DIR="/opt/cni/downloads"
 CONTAINERD_DOWNLOADS_DIR="/opt/containerd/downloads"
+TELEPORT_DOWNLOADS_DIR="/opt/teleport/downloads"
 K8S_DOWNLOADS_DIR="/opt/kubernetes/downloads"
 UBUNTU_RELEASE=$(lsb_release -r -s)
 
@@ -1426,7 +1435,7 @@ installContainerRuntime() {
         installMoby
     fi
     {{if NeedsContainerd}}
-        installContainerd
+        installTeleport
     {{end}}
 }
 
@@ -1463,6 +1472,11 @@ installContainerd() {
         rm -Rf $CONTAINERD_DOWNLOADS_DIR &
     fi  
 }
+
+installTeleport() {
+    downloadTeleport
+    tar xvzf ${TELPORT_DOWNLOAD_DIR}/teleport-containerd.tar.gz
+}
 {{end}}
 
 getMobyPkg() {
@@ -1498,6 +1512,11 @@ downloadContainerd() {
     mkdir -p $CONTAINERD_DOWNLOADS_DIR
     CONTAINERD_TGZ_TMP=${CONTAINERD_DOWNLOAD_URL##*/}
     retrycmd_get_tarball 120 5 "$CONTAINERD_DOWNLOADS_DIR/${CONTAINERD_TGZ_TMP}" ${CONTAINERD_DOWNLOAD_URL} || exit $ERR_CONTAINERD_DOWNLOAD_TIMEOUT
+}
+
+downloadTeleport() {
+    mkdir -p $TELEPORT_DOWNLOADS_DIR
+    wget "https://teleportcontainerd.blob.core.windows.net/binaries/teleport-containerd.tar.gz" -P $TELEPORT_DOWNLOADS_DIR
 }
 
 installCNI() {
