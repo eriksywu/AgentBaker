@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math/rand"
-	"net"
 	neturl "net/url"
 	"sort"
 	"strconv"
@@ -680,11 +679,6 @@ func (p *Properties) IsIPMasqAgentDisabled() bool {
 	return false
 }
 
-// IsHostedMasterProfile returns true if the cluster has a hosted master
-func (p *Properties) IsHostedMasterProfile() bool {
-	return p.HostedMasterProfile != nil
-}
-
 // HasWindows returns true if the cluster contains windows
 func (p *Properties) HasWindows() bool {
 	for _, agentPoolProfile := range p.AgentPoolProfiles {
@@ -695,46 +689,9 @@ func (p *Properties) HasWindows() bool {
 	return false
 }
 
-// SetCloudProviderRateLimitDefaults sets default cloudprovider rate limiter config
-func (p *Properties) SetCloudProviderRateLimitDefaults() {
-	if p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket == 0 {
-		var agentPoolProfilesCount = len(p.AgentPoolProfiles)
-		if agentPoolProfilesCount == 0 {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket = DefaultKubernetesCloudProviderRateLimitBucket
-		} else {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket = agentPoolProfilesCount * MaxAgentCount
-		}
-	}
-	if p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPS == 0 {
-		if (DefaultKubernetesCloudProviderRateLimitQPS / float64(p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket)) < MinCloudProviderQPSToBucketFactor {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPS = float64(p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket) * MinCloudProviderQPSToBucketFactor
-		} else {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPS = DefaultKubernetesCloudProviderRateLimitQPS
-		}
-	}
-	if p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucketWrite == 0 {
-		var agentPoolProfilesCount = len(p.AgentPoolProfiles)
-		if agentPoolProfilesCount == 0 {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucketWrite = DefaultKubernetesCloudProviderRateLimitBucketWrite
-		} else {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucketWrite = agentPoolProfilesCount * MaxAgentCount
-		}
-	}
-	if p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPSWrite == 0 {
-		if (DefaultKubernetesCloudProviderRateLimitQPSWrite / float64(p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucketWrite)) < MinCloudProviderQPSToBucketFactor {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPSWrite = float64(p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucketWrite) * MinCloudProviderQPSToBucketFactor
-		} else {
-			p.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPSWrite = DefaultKubernetesCloudProviderRateLimitQPSWrite
-		}
-	}
-}
-
 // TotalNodes returns the total number of nodes in the cluster configuration
 func (p *Properties) TotalNodes() int {
 	var totalNodes int
-	if p.MasterProfile != nil {
-		totalNodes = p.MasterProfile.Count
-	}
 	for _, pool := range p.AgentPoolProfiles {
 		totalNodes += pool.Count
 	}
@@ -743,8 +700,8 @@ func (p *Properties) TotalNodes() int {
 
 // HasAvailabilityZones returns true if the cluster contains a profile with zones
 func (p *Properties) HasAvailabilityZones() bool {
-	hasZones := p.MasterProfile != nil && p.MasterProfile.HasAvailabilityZones()
-	if !hasZones && p.AgentPoolProfiles != nil {
+	hasZones := false
+	if p.AgentPoolProfiles != nil {
 		for _, agentPoolProfile := range p.AgentPoolProfiles {
 			if agentPoolProfile.HasAvailabilityZones() {
 				hasZones = true
@@ -777,9 +734,7 @@ func (p *Properties) GetClusterID() string {
 		// the name suffix uniquely identifies the cluster and is generated off a hash
 		// from the master dns name
 		h := fnv.New64a()
-		if p.MasterProfile != nil {
-			h.Write([]byte(p.MasterProfile.DNSPrefix))
-		} else if p.HostedMasterProfile != nil {
+		if p.HostedMasterProfile != nil {
 			h.Write([]byte(p.HostedMasterProfile.DNSPrefix))
 		} else if len(p.AgentPoolProfiles) > 0 {
 			h.Write([]byte(p.AgentPoolProfiles[0].Name))
@@ -861,9 +816,6 @@ func (p *Properties) IsVHDDistroForAllNodes() bool {
 			}
 		}
 	}
-	if p.MasterProfile != nil {
-		return p.MasterProfile.IsVHDDistro()
-	}
 	return true
 }
 
@@ -889,21 +841,12 @@ func (p *Properties) HasVMSSAgentPool() bool {
 func (p *Properties) GetSubnetName() string {
 	var subnetName string
 
-	if !p.IsHostedMasterProfile() {
-		if p.MasterProfile.IsCustomVNET() {
-			subnetName = strings.Split(p.MasterProfile.VnetSubnetID, "/")[DefaultSubnetNameResourceSegmentIndex]
-		} else if p.MasterProfile.IsVirtualMachineScaleSets() {
-			subnetName = "subnetmaster"
-		} else {
-			subnetName = p.K8sOrchestratorName() + "-subnet"
-		}
+	if p.AreAgentProfilesCustomVNET() {
+		subnetName = strings.Split(p.AgentPoolProfiles[0].VnetSubnetID, "/")[DefaultSubnetNameResourceSegmentIndex]
 	} else {
-		if p.AreAgentProfilesCustomVNET() {
-			subnetName = strings.Split(p.AgentPoolProfiles[0].VnetSubnetID, "/")[DefaultSubnetNameResourceSegmentIndex]
-		} else {
-			subnetName = p.K8sOrchestratorName() + "-subnet"
-		}
+		subnetName = p.K8sOrchestratorName() + "-subnet"
 	}
+
 	return subnetName
 }
 
@@ -914,19 +857,14 @@ func (p *Properties) GetNSGName() string {
 
 // GetResourcePrefix returns the prefix to use for naming cluster resources
 func (p *Properties) GetResourcePrefix() string {
-	if p.IsHostedMasterProfile() {
-		return p.K8sOrchestratorName() + "-agentpool-" + p.GetClusterID() + "-"
-	}
-	return p.K8sOrchestratorName() + "-master-" + p.GetClusterID() + "-"
+	return p.K8sOrchestratorName() + "-agentpool-" + p.GetClusterID() + "-"
 }
 
 // GetVirtualNetworkName returns the virtual network name of the cluster
 func (p *Properties) GetVirtualNetworkName() string {
 	var vnetName string
-	if p.IsHostedMasterProfile() && p.AreAgentProfilesCustomVNET() {
+	if p.AreAgentProfilesCustomVNET() {
 		vnetName = strings.Split(p.AgentPoolProfiles[0].VnetSubnetID, "/")[DefaultVnetNameResourceSegmentIndex]
-	} else if !p.IsHostedMasterProfile() && p.MasterProfile.IsCustomVNET() {
-		vnetName = strings.Split(p.MasterProfile.VnetSubnetID, "/")[DefaultVnetNameResourceSegmentIndex]
 	} else {
 		vnetName = p.K8sOrchestratorName() + "-vnet-" + p.GetClusterID()
 	}
@@ -936,10 +874,8 @@ func (p *Properties) GetVirtualNetworkName() string {
 // GetVNetResourceGroupName returns the virtual network resource group name of the cluster
 func (p *Properties) GetVNetResourceGroupName() string {
 	var vnetResourceGroupName string
-	if p.IsHostedMasterProfile() && p.AreAgentProfilesCustomVNET() {
+	if p.AreAgentProfilesCustomVNET() {
 		vnetResourceGroupName = strings.Split(p.AgentPoolProfiles[0].VnetSubnetID, "/")[DefaultVnetResourceGroupSegmentIndex]
-	} else if !p.IsHostedMasterProfile() && p.MasterProfile.IsCustomVNET() {
-		vnetResourceGroupName = strings.Split(p.MasterProfile.VnetSubnetID, "/")[DefaultVnetResourceGroupSegmentIndex]
 	}
 	return vnetResourceGroupName
 }
@@ -1177,83 +1113,6 @@ func (o *OrchestratorProfile) IsPrivateCluster() bool {
 	return o.KubernetesConfig != nil && o.KubernetesConfig.PrivateCluster != nil && to.Bool(o.KubernetesConfig.PrivateCluster.Enabled)
 }
 
-// HasCosmosEtcd returns true if cosmos etcd configuration is enabled
-func (m *MasterProfile) HasCosmosEtcd() bool {
-	return to.Bool(m.CosmosEtcd)
-}
-
-// GetCosmosEndPointURI returns the URI string for the cosmos etcd endpoint
-func (m *MasterProfile) GetCosmosEndPointURI() string {
-	if m.HasCosmosEtcd() {
-		return fmt.Sprintf("%sk8s.etcd.cosmosdb.azure.com", m.DNSPrefix)
-	}
-	return ""
-}
-
-// IsVHDDistro returns true if the distro uses VHD SKUs
-func (m *MasterProfile) IsVHDDistro() bool {
-	return strings.EqualFold(string(m.Distro), string(AKSUbuntu1604)) || strings.EqualFold(string(m.Distro), string(AKSUbuntu1804))
-}
-
-// IsUbuntu1804 returns true if the master profile distro is based on Ubuntu 18.04
-func (m *MasterProfile) IsUbuntu1804() bool {
-	switch m.Distro {
-	case AKSUbuntu1804, Ubuntu1804, Ubuntu1804Gen2:
-		return true
-	default:
-		return false
-	}
-}
-
-// IsCustomVNET returns true if the customer brought their own VNET
-func (m *MasterProfile) IsCustomVNET() bool {
-	return len(m.VnetSubnetID) > 0
-}
-
-// IsVirtualMachineScaleSets returns true if the master availability profile is VMSS
-func (m *MasterProfile) IsVirtualMachineScaleSets() bool {
-	return strings.EqualFold(m.AvailabilityProfile, VirtualMachineScaleSets)
-}
-
-// GetFirstConsecutiveStaticIPAddress returns the first static IP address of the given subnet.
-func (m *MasterProfile) GetFirstConsecutiveStaticIPAddress(subnetStr string) string {
-	_, subnet, err := net.ParseCIDR(subnetStr)
-	if err != nil {
-		return DefaultFirstConsecutiveKubernetesStaticIP
-	}
-
-	// Find the first and last octet of the host bits.
-	ones, bits := subnet.Mask.Size()
-	firstOctet := ones / 8
-	lastOctet := bits/8 - 1
-
-	if m.IsVirtualMachineScaleSets() {
-		subnet.IP[lastOctet] = DefaultKubernetesFirstConsecutiveStaticIPOffsetVMSS
-	} else {
-		// Set the remaining host bits in the first octet.
-		subnet.IP[firstOctet] |= (1 << byte((8 - (ones % 8)))) - 1
-
-		// Fill the intermediate octets with 1s and last octet with offset. This is done so to match
-		// the existing behavior of allocating static IP addresses from the last /24 of the subnet.
-		for i := firstOctet + 1; i < lastOctet; i++ {
-			subnet.IP[i] = 255
-		}
-		subnet.IP[lastOctet] = DefaultKubernetesFirstConsecutiveStaticIPOffset
-	}
-
-	return subnet.IP.String()
-}
-
-// HasAvailabilityZones returns true if the master profile has availability zones
-func (m *MasterProfile) HasAvailabilityZones() bool {
-	return m.AvailabilityZones != nil && len(m.AvailabilityZones) > 0
-}
-
-// HasMultipleNodes returns true if there are more than one master nodes
-func (m *MasterProfile) HasMultipleNodes() bool {
-	return m.Count > 1
-}
-
 // IsFeatureEnabled returns true if a feature flag is on for the provided feature
 func (f *FeatureFlags) IsFeatureEnabled(feature string) bool {
 	if f != nil {
@@ -1285,24 +1144,6 @@ func (i *ImageReference) IsValid() bool {
 func (k *KubernetesConfig) IsAddonEnabled(addonName string) bool {
 	kubeAddon := k.GetAddonByName(addonName)
 	return kubeAddon.IsEnabled()
-}
-
-// SetCloudProviderBackoffDefaults sets default cloudprovider backoff config
-func (k *KubernetesConfig) SetCloudProviderBackoffDefaults() {
-	if k.CloudProviderBackoffDuration == 0 {
-		k.CloudProviderBackoffDuration = DefaultKubernetesCloudProviderBackoffDuration
-	}
-	if k.CloudProviderBackoffRetries == 0 {
-		k.CloudProviderBackoffRetries = DefaultKubernetesCloudProviderBackoffRetries
-	}
-	if !strings.EqualFold(k.CloudProviderBackoffMode, CloudProviderBackoffModeV2) {
-		if k.CloudProviderBackoffExponent == 0 {
-			k.CloudProviderBackoffExponent = DefaultKubernetesCloudProviderBackoffExponent
-		}
-		if k.CloudProviderBackoffJitter == 0 {
-			k.CloudProviderBackoffJitter = DefaultKubernetesCloudProviderBackoffJitter
-		}
-	}
 }
 
 // PrivateJumpboxProvision checks if a private cluster has jumpbox auto-provisioning

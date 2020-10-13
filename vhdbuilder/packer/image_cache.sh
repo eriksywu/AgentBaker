@@ -224,7 +224,7 @@ pullSystemImages() {
 
     # oms agent used by AKS
     # keeping last released image (ciprod07152020 - hotfix) and current to be released image (ciprod08072020)
-    OMS_AGENT_IMAGES="ciprod07152020 ciprod08072020"
+    OMS_AGENT_IMAGES="ciprod08072020 ciprod10052020"
     for OMS_AGENT_IMAGE in ${OMS_AGENT_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:${OMS_AGENT_IMAGE}"
         pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
