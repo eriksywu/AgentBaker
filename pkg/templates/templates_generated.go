@@ -3692,29 +3692,33 @@ write_files:
   permissions: "0644"
   owner: root
   content: |
-    subreaper = false{{if HasDataDir }}
+    version = 2
+    subreaper = false
+    oom_score = 0{{if HasDataDir }}
     root = "{{GetDataDir}}"{{- end}}
-    oom_score = 0
-    [plugins.cri]
-    sandbox_image = "{{GetPodInfraContainerSpec}}"
-    [plugins.cri.containerd.untrusted_workload_runtime]
-    runtime_type = "io.containerd.runtime.v1.linux" {{if IsNSeriesSKU .}}
-    runtime_engine = "/usr/bin/nvidia-container-runtime"
-    {{- else}}
-    runtime_engine = "/usr/bin/runc"
-    {{- end}}
-    [plugins.cri.containerd.default_runtime]
-    runtime_type = "io.containerd.runtime.v1.linux" {{if IsNSeriesSKU .}}
-    runtime_engine = "/usr/bin/nvidia-container-runtime"
-    {{- else}}
-    runtime_engine = "/usr/bin/runc"
-    {{- end}}
-    {{if IsKubenet }}
-    [plugins.cri.cni]
+    [plugins."io.containerd.grpc.v1.cri"]
+        sandbox_image = "{{GetPodInfraContainerSpec}}"
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+            [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime]
+                runtime_type = "io.containerd.runtime.v1.linux"
+                {{- if IsNSeriesSKU .}}
+                runtime_engine = "/usr/bin/nvidia-container-runtime"
+                {{- else}}
+                runtime_engine = "/usr/bin/runc"
+                {{- end}}
+            [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
+                runtime_type = "io.containerd.runtime.v1.linux"
+                {{- if IsNSeriesSKU .}}
+                runtime_engine = "/usr/bin/nvidia-container-runtime"
+                {{- else}}
+                runtime_engine = "/usr/bin/runc"
+                {{- end}}
+    {{- if IsKubenet }}
+    [plugins."io.containerd.grpc.v1.cri".cni]
     bin_dir = "/opt/cni/bin"
     conf_dir = "/etc/cni/net.d"
     conf_template = "/etc/containerd/kubenet_template.conf"
-    {{end}}
+    {{- end}}
     [metrics]
     address = "127.0.0.1:10257"
     #EOF
