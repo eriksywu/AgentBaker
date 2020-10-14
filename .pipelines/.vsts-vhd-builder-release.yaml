@@ -770,8 +770,8 @@ phases:
   - phase: build_vhd_1804_containerd
     condition: eq('${{ parameters.build1804containerd }}', true)
     queue:
-    name: Hosted Ubuntu 1604
-    timeoutInMinutes: 120
+      name: Hosted Ubuntu 1604
+      timeoutInMinutes: 120
     steps:
       - bash: |
           echo '##vso[task.setvariable variable=DRY_RUN]${{parameters.dryrun}}'
@@ -781,12 +781,12 @@ phases:
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
           echo '##vso[task.setvariable variable=SKU_NAME]1804containerd'
-          displayName: Setup Build Variables
+        displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
           echo "Set build mode to $m" && \
           echo "##vso[task.setvariable variable=MODE]$m"
-          displayName: Get Build Mode
+        displayName: Get Build Mode
       - bash: |
           echo MODE=$(MODE) && \
           docker run --rm \
@@ -812,9 +812,9 @@ phases:
           -e SIG_IMAGE_VERSION=${SIG_IMAGE_VERSION} \
           -e CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
           ${CONTAINER_IMAGE} make -f packer.mk run-packer
-          displayName: Building VHD
+        displayName: Building VHD
       - task: PublishPipelineArtifact@0
-          inputs:
+        inputs:
           artifactName: 'vhd-release-notes-1804-containerd'
           targetPath: 'release-notes.txt'
       - bash: |
@@ -831,8 +831,8 @@ phases:
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           -e OS_DISK_SAS=${OS_DISK_SAS} \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
-          displayName: Copying resource to Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
+        displayName: Copying resource to Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
       - bash: |
           echo MODE=$(MODE) && \
           SA_NAME="$(cat packer-output | grep "storage name:" | cut -d " " -f 3)" && \
@@ -846,7 +846,7 @@ phases:
           -e SA_NAME=${SA_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-sa
-          displayName: Clean-up Storage Account
+        displayName: Clean-up Storage Account
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -861,8 +861,8 @@ phases:
           -e IMAGE_NAME=${IMAGE_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-mi
-          displayName: Clean-up Managed Image
-          condition: ne(variables['MODE'], 'default')
+        displayName: Clean-up Managed Image
+        condition: ne(variables['MODE'], 'default')
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -880,8 +880,8 @@ phases:
           -e CLASSIC_BLOB=${CLASSIC_BLOB} \
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           ${CONTAINER_IMAGE} make -f packer.mk convert-sig-to-classic-storage-account-blob
-          displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
+        displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
@@ -903,18 +903,18 @@ phases:
           -e OFFER_NAME="Ubuntu" \
           -e HYPERV_GENERATION=${HYPERV_GENERATION} \
           ${CONTAINER_IMAGE} make -f packer.mk generate-sas
-          displayName: Getting Shared Access Signature URI
-          condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
+        displayName: Getting Shared Access Signature URI
+        condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
       - task: PublishPipelineArtifact@1
-          inputs:
+        inputs:
           artifactName: 'publishing-info-1804-containerd'
           targetPath: 'vhd-publishing-info.json'
-          condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
+        condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
   - phase: build_vhd_1804_gen2_containerd
     condition: eq('${{ parameters.build1804gen2containerd }}', true)
     queue:
-    name: Hosted Ubuntu 1604
-    timeoutInMinutes: 120
+      name: Hosted Ubuntu 1604
+      timeoutInMinutes: 120
     steps:
       - bash: |
           echo '##vso[task.setvariable variable=DRY_RUN]${{parameters.dryrun}}'
@@ -924,12 +924,12 @@ phases:
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
           echo '##vso[task.setvariable variable=SKU_NAME]1804gen2containerd'
-          displayName: Setup Build Variables
+        displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
           echo "Set build mode to $m" && \
           echo "##vso[task.setvariable variable=MODE]$m"
-          displayName: Get Build Mode
+        displayName: Get Build Mode
       - bash: |
           echo MODE=$(MODE) && \
           docker run --rm \
@@ -955,9 +955,9 @@ phases:
           -e SIG_IMAGE_VERSION=${SIG_IMAGE_VERSION} \
           -e CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
           ${CONTAINER_IMAGE} make -f packer.mk run-packer
-          displayName: Building VHD
+        displayName: Building VHD
       - task: PublishPipelineArtifact@0
-          inputs:
+        inputs:
           artifactName: 'vhd-release-notes-1804-gen2-containerd'
           targetPath: 'release-notes.txt'
       - bash: |
@@ -974,8 +974,8 @@ phases:
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           -e OS_DISK_SAS=${OS_DISK_SAS} \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
-          displayName: Copying resource to Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
+        displayName: Copying resource to Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
       - bash: |
           echo MODE=$(MODE) && \
           SA_NAME="$(cat packer-output | grep "storage name:" | cut -d " " -f 3)" && \
@@ -989,7 +989,7 @@ phases:
           -e SA_NAME=${SA_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-sa
-          displayName: Clean-up Storage Account
+        displayName: Clean-up Storage Account
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1004,8 +1004,8 @@ phases:
           -e IMAGE_NAME=${IMAGE_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-mi
-          displayName: Clean-up Managed Image
-          condition: ne(variables['MODE'], 'default')
+        displayName: Clean-up Managed Image
+        condition: ne(variables['MODE'], 'default')
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1023,8 +1023,8 @@ phases:
           -e CLASSIC_BLOB=${CLASSIC_BLOB} \
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           ${CONTAINER_IMAGE} make -f packer.mk convert-sig-to-classic-storage-account-blob
-          displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
+        displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
@@ -1046,18 +1046,18 @@ phases:
           -e OFFER_NAME="Ubuntu" \
           -e HYPERV_GENERATION=${HYPERV_GENERATION} \
           ${CONTAINER_IMAGE} make -f packer.mk generate-sas
-          displayName: Getting Shared Access Signature URI
-          condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
+        displayName: Getting Shared Access Signature URI
+        condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
       - task: PublishPipelineArtifact@1
-          inputs:
+        inputs:
           artifactName: 'publishing-info-1804-gen2-containerd'
           targetPath: 'vhd-publishing-info.json'
-          condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
+        condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
   - phase: build_vhd_1804_gpu_containerd
     condition: eq('${{ parameters.build1804gpucontainerd }}', true)
     queue:
-    name: Hosted Ubuntu 1604
-    timeoutInMinutes: 120
+      name: Hosted Ubuntu 1604
+      timeoutInMinutes: 120
     steps:
       - bash: |
           echo '##vso[task.setvariable variable=DRY_RUN]${{parameters.dryrun}}'
@@ -1067,12 +1067,12 @@ phases:
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
           echo '##vso[task.setvariable variable=SKU_NAME]1804gpucontainerd'
-          displayName: Setup Build Variables
+        displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
           echo "Set build mode to $m" && \
           echo "##vso[task.setvariable variable=MODE]$m"
-          displayName: Get Build Mode
+        displayName: Get Build Mode
       - bash: |
           echo MODE=$(MODE) && \
           docker run --rm \
@@ -1098,9 +1098,9 @@ phases:
           -e SIG_IMAGE_VERSION=${SIG_IMAGE_VERSION} \
           -e CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
           ${CONTAINER_IMAGE} make -f packer.mk run-packer
-          displayName: Building VHD
+        displayName: Building VHD
       - task: PublishPipelineArtifact@0
-          inputs:
+        inputs:
           artifactName: 'vhd-release-notes-1804-gpu-containerd'
           targetPath: 'release-notes.txt'
       - bash: |
@@ -1117,8 +1117,8 @@ phases:
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           -e OS_DISK_SAS=${OS_DISK_SAS} \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
-          displayName: Copying resource to Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
+        displayName: Copying resource to Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
       - bash: |
           echo MODE=$(MODE) && \
           SA_NAME="$(cat packer-output | grep "storage name:" | cut -d " " -f 3)" && \
@@ -1132,7 +1132,7 @@ phases:
           -e SA_NAME=${SA_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-sa
-          displayName: Clean-up Storage Account
+        displayName: Clean-up Storage Account
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1147,8 +1147,8 @@ phases:
           -e IMAGE_NAME=${IMAGE_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-mi
-          displayName: Clean-up Managed Image
-          condition: ne(variables['MODE'], 'default')
+        displayName: Clean-up Managed Image
+        condition: ne(variables['MODE'], 'default')
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1166,8 +1166,8 @@ phases:
           -e CLASSIC_BLOB=${CLASSIC_BLOB} \
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           ${CONTAINER_IMAGE} make -f packer.mk convert-sig-to-classic-storage-account-blob
-          displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
+        displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
@@ -1189,18 +1189,18 @@ phases:
           -e OFFER_NAME="Ubuntu" \
           -e HYPERV_GENERATION=${HYPERV_GENERATION} \
           ${CONTAINER_IMAGE} make -f packer.mk generate-sas
-          displayName: Getting Shared Access Signature URI
-          condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
+        displayName: Getting Shared Access Signature URI
+        condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
       - task: PublishPipelineArtifact@1
-          inputs:
+        inputs:
           artifactName: 'publishing-info-1804-gpu-containerd'
           targetPath: 'vhd-publishing-info.json'
-          condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
+        condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
   - phase: build_vhd_1804_gen2_gpu_containerd
     condition: eq('${{ parameters.build1804gen2gpucontainerd }}', true)
     queue:
-    name: Hosted Ubuntu 1604
-    timeoutInMinutes: 120
+      name: Hosted Ubuntu 1604
+      timeoutInMinutes: 120
     steps:
       - bash: |
           echo '##vso[task.setvariable variable=DRY_RUN]${{parameters.dryrun}}'
@@ -1210,12 +1210,12 @@ phases:
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
           echo '##vso[task.setvariable variable=SKU_NAME]1804gen2gpucontainerd'
-          displayName: Setup Build Variables
+        displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
           echo "Set build mode to $m" && \
           echo "##vso[task.setvariable variable=MODE]$m"
-          displayName: Get Build Mode
+        displayName: Get Build Mode
       - bash: |
           echo MODE=$(MODE) && \
           docker run --rm \
@@ -1241,9 +1241,9 @@ phases:
           -e SIG_IMAGE_VERSION=${SIG_IMAGE_VERSION} \
           -e CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
           ${CONTAINER_IMAGE} make -f packer.mk run-packer
-          displayName: Building VHD
+        displayName: Building VHD
       - task: PublishPipelineArtifact@0
-          inputs:
+        inputs:
           artifactName: 'vhd-release-notes-1804-gen2-gpu-containerd'
           targetPath: 'release-notes.txt'
       - bash: |
@@ -1260,8 +1260,8 @@ phases:
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           -e OS_DISK_SAS=${OS_DISK_SAS} \
           ${CONTAINER_IMAGE} make -f packer.mk az-copy
-          displayName: Copying resource to Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
+        displayName: Copying resource to Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'default'))
       - bash: |
           echo MODE=$(MODE) && \
           SA_NAME="$(cat packer-output | grep "storage name:" | cut -d " " -f 3)" && \
@@ -1275,7 +1275,7 @@ phases:
           -e SA_NAME=${SA_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-sa
-          displayName: Clean-up Storage Account
+        displayName: Clean-up Storage Account
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1290,8 +1290,8 @@ phases:
           -e IMAGE_NAME=${IMAGE_NAME} \
           -e AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME} \
           ${CONTAINER_IMAGE} make -f packer.mk delete-mi
-          displayName: Clean-up Managed Image
-          condition: ne(variables['MODE'], 'default')
+        displayName: Clean-up Managed Image
+        condition: ne(variables['MODE'], 'default')
       - bash: |
           echo MODE=$(MODE) && \
           create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')" && \
@@ -1309,8 +1309,8 @@ phases:
           -e CLASSIC_BLOB=${CLASSIC_BLOB} \
           -e CLASSIC_SAS_TOKEN="$(SAS_TOKEN)" \
           ${CONTAINER_IMAGE} make -f packer.mk convert-sig-to-classic-storage-account-blob
-          displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
-          condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
+        displayName: Convert Shared Image Gallery To VHD Blob In Classic Storage Account
+        condition: and(eq(variables.DRY_RUN, 'False'), eq(variables['MODE'], 'gen2Mode'))
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
@@ -1332,10 +1332,10 @@ phases:
           -e OFFER_NAME="Ubuntu" \
           -e HYPERV_GENERATION=${HYPERV_GENERATION} \
           ${CONTAINER_IMAGE} make -f packer.mk generate-sas
-          displayName: Getting Shared Access Signature URI
-          condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
+        displayName: Getting Shared Access Signature URI
+        condition: and(eq(variables.DRY_RUN, 'False'), or(eq(variables['MODE'], 'gen2Mode'), eq(variables['MODE'], 'default')))
       - task: PublishPipelineArtifact@1
-          inputs:
+        inputs:
           artifactName: 'publishing-info-1804-gen2-gpu-containerd'
           targetPath: 'vhd-publishing-info.json'
-          condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
+        condition: and(eq(variables.DRY_RUN, 'False'), ne(variables['MODE'], 'sigMode'))
