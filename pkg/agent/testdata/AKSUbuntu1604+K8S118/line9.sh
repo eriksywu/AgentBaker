@@ -149,7 +149,7 @@ retrycmd_curl_file() {
     echo "${curl_retries} retries"
     for i in $(seq 1 $curl_retries); do
         [[ -f $filepath ]] && break
-        if [ $i -eq $tar_retries ]; then
+        if [ $i -eq $curl_retries ]; then
             return 1
         else
             timeout 60 curl -fsSL $url -o $filepath
