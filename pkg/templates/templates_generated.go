@@ -471,8 +471,7 @@ NETWORK_PLUGIN={{GetParameter "networkPlugin"}}
 NETWORK_POLICY={{GetParameter "networkPolicy"}}
 VNET_CNI_PLUGINS_URL={{GetParameter "vnetCniLinuxPluginsURL"}}
 CNI_PLUGINS_URL={{GetParameter "cniPluginsURL"}}
-## TODO parameterize this
-CRICTL_PLUGINS_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v.17.0/crictl-v1.17.0-linux-amd64.tar.gz"
+CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v.17.0/crictl-v1.17.0-linux-amd64.tar.gz"
 CLOUDPROVIDER_BACKOFF={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoff"}}
 CLOUDPROVIDER_BACKOFF_MODE={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoffMode"}}
 CLOUDPROVIDER_BACKOFF_RETRIES={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoffRetries"}}
@@ -491,6 +490,7 @@ LOAD_BALANCER_SKU={{GetVariable "loadBalancerSku"}}
 EXCLUDE_MASTER_FROM_STANDARD_LB={{GetVariable "excludeMasterFromStandardLB"}}
 MAXIMUM_LOADBALANCER_RULE_COUNT={{GetVariable "maximumLoadBalancerRuleCount"}}
 CONTAINER_RUNTIME={{GetParameter "containerRuntime"}}
+CLI_TOOL={{GetParameter "cliTool"}}
 CONTAINERD_DOWNLOAD_URL_BASE={{GetParameter "containerdDownloadURLBase"}}
 NETWORK_MODE={{GetParameter "networkMode"}}
 KUBE_BINARY_URL={{GetParameter "kubeBinaryURL"}}
@@ -772,16 +772,6 @@ configureCNIIPTables() {
         fi
         /sbin/ebtables -t nat --list
     fi
-}
-
-ensureContainerRuntime() {
-    if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
-        ensureDocker
-    fi
-    {{if NeedsContainerd}}
-        ensureContainerd
-    {{end}}
-    ensureMonitorService
 }
 
 {{if NeedsContainerd}}
@@ -1533,7 +1523,7 @@ installContainerRuntime() {
 {{if NeedsContainerd}}
 # CSE+VHD can dicate the containerd version, users don't care as long as it works
 installStandaloneContainerd() {
-    # azure-built runtimes have a "+azure" prefix in their version strings (i.e 1.4.1+azure). remove that here.
+    # azure-built runtimes have a "+azure" suffix in their version strings (i.e 1.4.1+azure). remove that here.
     CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||' | cut -d "+" -f 1)
     # v1.4.1 is our lowest supported version of containerd
     local CONTAINERD_VERSION="1.4.1"
@@ -1606,16 +1596,18 @@ downloadContainerd() {
 {{if NeedsContainerd}}
 downloadCrictl() {
     mkdir -p $CRICTL_DOWNLOAD_DIR
+    CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-amd64.tar.gz"
     CRICTL_TGZ_TEMP=${CRICTL_DOWNLOAD_URL##*/}
     retrycmd_curl_file 120 5 "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" ${CRICTL_DOWNLOAD_URL} || exit $ERR_CRICTL_DOWNLOAD_TIMEOUT
 }
 
 installCrictl() {
-    if ! which crictl &>/dev/null; then      
-        CRICTL_TGZ_TEMP=${CRICTL_DOWNLOAD_URL##*/} # Use bash builtin ## to remove all chars ("*") up to the final "/"
-        if [[ ! -f "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" ]]; then
-            downloadCrictl
-        fi
+    currentVersion=$(crictl --version 2>/dev/null)
+    CRICTL_VERSION=${KUBERNETES_VERSION%.*}.0
+    if [[ currentVersion =~ ${CRICTL_VERSION} ]]; then  
+        echo "crictl with target version of ${CRICTL_VERSION} already installed. skipping installCrictl"
+    else
+        downloadCrictl
         echo "Unpacking crictl into ${CRICTL_BIN_DIR}"
         tar zxvf "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" -C ${CRICTL_BIN_DIR}
         chmod 755 $CRICTL_BIN_DIR/crictl
@@ -1971,7 +1963,9 @@ wait_for_file 3600 1 {{GetCustomSearchDomainsCSEScriptFilepath}} || exit $ERR_FI
 {{GetCustomSearchDomainsCSEScriptFilepath}} > /opt/azure/containers/setup-custom-search-domain.log 2>&1 || exit $ERR_CUSTOM_SEARCH_DOMAINS_FAIL
 {{end}}
 
-ensureContainerRuntime
+{{- if not NeedsContainerd}}
+ensureDocker
+{{end}}
 
 configureK8s
 
@@ -1982,9 +1976,16 @@ configureCNI
 ensureDHCPv6
 {{end}}
 
+{{/* containerd should not be configured until cni has been configured first */}}
+{{- if NeedsContainerd}}
+ensureContainerd
+{{end}}
+
 {{- if EnableHostsConfigAgent}}
 configPrivateClusterHosts
 {{- end}}
+
+ensureMonitorService
 
 ensureKubelet
 ensureJournal
@@ -2309,7 +2310,7 @@ container_runtime_monitoring() {
   local -r container_runtime_name="$(getKubeletRuntime)"
 
   if [[ ${container_runtime_name} == "containerd" ]]; then
-    local healthcheck_command="cri --namespace k8s.io container list"
+    local healthcheck_command="ctr --namespace k8s.io container list"
   else 
     local healthcheck_command="docker ps"
   fi
@@ -2587,6 +2588,9 @@ Description=Kubelet
 ConditionPathExists=/usr/local/bin/kubelet
 {{if EnableEncryptionWithExternalKms}}
 Requires=kms.service
+{{end}}
+{{- if NeedsContainerd}}
+Requires=containerd.service
 {{end}}
 
 [Service]
@@ -3652,8 +3656,6 @@ write_files:
     ExecStart=
     ExecStart=/usr/bin/dockerd -H fd:// --storage-driver=overlay2 --bip={{GetParameter "dockerBridgeCidr"}}
     ExecStartPost=/sbin/iptables -P FORWARD ACCEPT
-    LimitNPROC=infinity
-    LimitCORE=infinity
     #EOF
 
 - path: /etc/docker/daemon.json
@@ -3713,12 +3715,12 @@ write_files:
                 {{- else}}
                 runtime_engine = "/usr/bin/runc"
                 {{- end}}
-    {{- if IsKubenet }}
+    {{ if IsKubenet }}
     [plugins."io.containerd.grpc.v1.cri".cni]
     bin_dir = "/opt/cni/bin"
     conf_dir = "/etc/cni/net.d"
     conf_template = "/etc/containerd/kubenet_template.conf"
-    {{- end}}
+    {{ end}}
     [plugins."io.containerd.grpc.v1.cri".registry.headers]
       X-Meta-Source-Client = ["azure/aks"]
     [metrics]

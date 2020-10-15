@@ -37,8 +37,7 @@ NETWORK_PLUGIN={{GetParameter "networkPlugin"}}
 NETWORK_POLICY={{GetParameter "networkPolicy"}}
 VNET_CNI_PLUGINS_URL={{GetParameter "vnetCniLinuxPluginsURL"}}
 CNI_PLUGINS_URL={{GetParameter "cniPluginsURL"}}
-## TODO parameterize this
-CRICTL_PLUGINS_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v.17.0/crictl-v1.17.0-linux-amd64.tar.gz"
+CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v.17.0/crictl-v1.17.0-linux-amd64.tar.gz"
 CLOUDPROVIDER_BACKOFF={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoff"}}
 CLOUDPROVIDER_BACKOFF_MODE={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoffMode"}}
 CLOUDPROVIDER_BACKOFF_RETRIES={{GetParameterProperty "cloudproviderConfig" "cloudProviderBackoffRetries"}}
@@ -57,6 +56,7 @@ LOAD_BALANCER_SKU={{GetVariable "loadBalancerSku"}}
 EXCLUDE_MASTER_FROM_STANDARD_LB={{GetVariable "excludeMasterFromStandardLB"}}
 MAXIMUM_LOADBALANCER_RULE_COUNT={{GetVariable "maximumLoadBalancerRuleCount"}}
 CONTAINER_RUNTIME={{GetParameter "containerRuntime"}}
+CLI_TOOL={{GetParameter "cliTool"}}
 CONTAINERD_DOWNLOAD_URL_BASE={{GetParameter "containerdDownloadURLBase"}}
 NETWORK_MODE={{GetParameter "networkMode"}}
 KUBE_BINARY_URL={{GetParameter "kubeBinaryURL"}}

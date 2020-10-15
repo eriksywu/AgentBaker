@@ -24,7 +24,7 @@ container_runtime_monitoring() {
   local -r container_runtime_name="$(getKubeletRuntime)"
 
   if [[ ${container_runtime_name} == "containerd" ]]; then
-    local healthcheck_command="cri --namespace k8s.io container list"
+    local healthcheck_command="ctr --namespace k8s.io container list"
   else 
     local healthcheck_command="docker ps"
   fi

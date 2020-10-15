@@ -83,15 +83,19 @@ if [[ $OS != $COREOS_OS_NAME ]]; then
 fi
 
 createKubeManifestDir
+ensureDocker
 
-ensureContainerRuntime
 
 configureK8s
 
 configureCNI
 
 
+
+
 configPrivateClusterHosts
+
+ensureMonitorService
 
 ensureKubelet
 ensureJournal

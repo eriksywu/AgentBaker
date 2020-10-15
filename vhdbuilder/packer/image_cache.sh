@@ -473,8 +473,7 @@ pullKubeComponents() {
 }
 
 pullAddonImages() {
-    runtime=$1
-    if [[ ${runtime} == "containerd" ]]; then
+    if [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
         cliTool="ctr"
     else 
         cliTool="docker"
@@ -535,17 +534,4 @@ pullAddonImages() {
     pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
     echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
     done
-}
-
-# make sure we have a containerd process up and running during vhd building
-# returns pid of the bg containerd process (if started)
-startContainerd() {
-    if [[ ! -S "/var/run/containerd/containerd.sock" ]]; then
-        containerd &>/dev/null &
-        containerdPID=$!
-        echo "Started a bg containerd process. PID=${containerdPID}" >> ${VHD_LOGS_FILEPATH}
-        echo containerdPID
-    else 
-        echo ""
-    fi 
 }

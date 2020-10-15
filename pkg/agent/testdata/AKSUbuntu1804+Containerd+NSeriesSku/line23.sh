@@ -105,7 +105,7 @@ installContainerRuntime() {
 
 # CSE+VHD can dicate the containerd version, users don't care as long as it works
 installStandaloneContainerd() {
-    # azure-built runtimes have a "+azure" prefix in their version strings (i.e 1.4.1+azure). remove that here.
+    # azure-built runtimes have a "+azure" suffix in their version strings (i.e 1.4.1+azure). remove that here.
     CURRENT_VERSION=$(containerd -version | cut -d " " -f 3 | sed 's|v||' | cut -d "+" -f 1)
     # v1.4.1 is our lowest supported version of containerd
     local CONTAINERD_VERSION="1.4.1"
@@ -162,16 +162,18 @@ downloadContainerd() {
 
 downloadCrictl() {
     mkdir -p $CRICTL_DOWNLOAD_DIR
+    CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-amd64.tar.gz"
     CRICTL_TGZ_TEMP=${CRICTL_DOWNLOAD_URL##*/}
     retrycmd_curl_file 120 5 "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" ${CRICTL_DOWNLOAD_URL} || exit $ERR_CRICTL_DOWNLOAD_TIMEOUT
 }
 
 installCrictl() {
-    if ! which crictl &>/dev/null; then      
-        CRICTL_TGZ_TEMP=${CRICTL_DOWNLOAD_URL##*/} # Use bash builtin ## to remove all chars ("*") up to the final "/"
-        if [[ ! -f "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" ]]; then
-            downloadCrictl
-        fi
+    currentVersion=$(crictl --version 2>/dev/null)
+    CRICTL_VERSION=${KUBERNETES_VERSION%.*}.0
+    if [[ currentVersion =~ ${CRICTL_VERSION} ]]; then  
+        echo "crictl with target version of ${CRICTL_VERSION} already installed. skipping installCrictl"
+    else
+        downloadCrictl
         echo "Unpacking crictl into ${CRICTL_BIN_DIR}"
         tar zxvf "$CRICTL_DOWNLOAD_DIR/${CRICTL_TGZ_TEMP}" -C ${CRICTL_BIN_DIR}
         chmod 755 $CRICTL_BIN_DIR/crictl

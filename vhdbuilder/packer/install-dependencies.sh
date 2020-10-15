@@ -53,34 +53,29 @@ if [[ ${UBUNTU_RELEASE} == "18.04" ]]; then
   disableSystemdTimesyncdAndEnableNTP || exit 1
 fi
 
+
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
   echo "VHD will be built with containerd as the container runtime" >> ${VHD_LOGS_FILEPATH}
   CONTAINERD_VERSION="1.4.1"
   installStandaloneContainerd
   echo "  - containerd v${CONTAINERD_VERSION}" >> ${VHD_LOGS_FILEPATH}
-  CRICTL_VERSION="v1.17.0"
-  CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz"
-  installCrictl
-  echo "  - crictl version ${CRICTL_VERSION}" >> ${VHD_LOGS_FILEPATH}
+  CRICTL_VERSIONS="1.19.0"
+  for CRICTL_VERSION in ${CRICTL_VERSIONS}; do
+    downloadCrictl 
+    echo "  - crictl version ${CRICTL_VERSION}" >> ${VHD_LOGS_FILEPATH}
+  done
+  # k8s will use images in the k8s.io namespaces - create it
+  ctr namespace create k8s.io
 else
   CONTAINER_RUNTIME="docker"
-  echo "VHD will be built with docker as container runtime" >> ${VHD_LOGS_FILEPATH}
   MOBY_VERSION="19.03.12"
   installMoby
+  echo "VHD will be built with docker as container runtime" >> ${VHD_LOGS_FILEPATH}
   echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
 fi
 
 installBpftrace
 echo "  - bpftrace" >> ${VHD_LOGS_FILEPATH}
-
-if [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
-  # start up a bg containerd process if not yet started
-  containerdPID=$(startContainerd)
-  if [[ $containerdPID != "" ]]; then
-    echo "starting a background containerd process (pid=${containerdPID}) - to be killed at end of build process"
-  fi
-  ctr namespace create k8s.io
-fi
 
 installGPUDrivers
 echo "  - nvidia-docker2 nvidia-container-runtime" >> ${VHD_LOGS_FILEPATH}
@@ -130,18 +125,13 @@ for CNI_PLUGIN_VERSION in $CNI_PLUGIN_VERSIONS; do
 done
 
 # pre-pull system images 
-pullSystemImages ${CONTAINER_RUNTIME}
+pullSystemImages
 
 # pull k8s component images and extract components
-pullKubeComponents ${CONTAINER_RUNTIME}
+pullKubeComponents
 
 # pre-pull additional addon images
-pullAddonImages ${CONTAINER_RUNTIME}
-
-if [[ ${containerdPID:-""} != "" ]]; then
-  echo "Killing background containerd process. PID=${containerdPID}" >> ${VHD_LOGS_FILEPATH}
-  kill -9 ${containerdPID}
-fi
+pullAddonImages
 
 # shellcheck disable=SC2010
 ls -ltr /dev/* | grep sgx >>  ${VHD_LOGS_FILEPATH} 

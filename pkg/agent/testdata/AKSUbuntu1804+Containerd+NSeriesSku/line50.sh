@@ -2,6 +2,8 @@
 Description=Kubelet
 ConditionPathExists=/usr/local/bin/kubelet
 
+Requires=containerd.service
+
 
 [Service]
 Restart=always

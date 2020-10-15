@@ -86,13 +86,17 @@ fi
 
 createKubeManifestDir
 
-ensureContainerRuntime
-
 configureK8s
 
 configureCNI
 
 
+
+
+ensureContainerd
+
+
+ensureMonitorService
 
 ensureKubelet
 ensureJournal
