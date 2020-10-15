@@ -145,9 +145,9 @@ retrycmd_get_executable() {
     done
 }
 retrycmd_curl_file() {
-    tar_retries=$1; wait_sleep=$2; filepath=$3; url=$4
-    echo "${tar_retries} retries"
-    for i in $(seq 1 $tar_retries); do
+    curl_retries=$1; wait_sleep=$2; filepath=$3; url=$4
+    echo "${curl_retries} retries"
+    for i in $(seq 1 $curl_retries); do
         [[ -f $filepath ]] && break
         if [ $i -eq $tar_retries ]; then
             return 1
@@ -316,7 +316,7 @@ systemctlEnableAndStart() {
 }
 
 systemctlDisableAndStop() {
-    if [ systemctl list-units --full --all | grep -q "$1.service" ]; then
+    if systemctl list-units --full --all | grep -q "$1.service"; then
         systemctl_stop 20 5 25 $1 || echo "$1 could not be stopped"
         systemctl_disable 20 5 25 $1 || echo "$1 could not be disabled"
     fi

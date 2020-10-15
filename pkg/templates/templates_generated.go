@@ -1220,9 +1220,9 @@ retrycmd_get_executable() {
     done
 }
 retrycmd_curl_file() {
-    tar_retries=$1; wait_sleep=$2; filepath=$3; url=$4
-    echo "${tar_retries} retries"
-    for i in $(seq 1 $tar_retries); do
+    curl_retries=$1; wait_sleep=$2; filepath=$3; url=$4
+    echo "${curl_retries} retries"
+    for i in $(seq 1 $curl_retries); do
         [[ -f $filepath ]] && break
         if [ $i -eq $tar_retries ]; then
             return 1
@@ -1391,7 +1391,7 @@ systemctlEnableAndStart() {
 }
 
 systemctlDisableAndStop() {
-    if [ systemctl list-units --full --all | grep -q "$1.service" ]; then
+    if systemctl list-units --full --all | grep -q "$1.service"; then
         systemctl_stop 20 5 25 $1 || echo "$1 could not be stopped"
         systemctl_disable 20 5 25 $1 || echo "$1 could not be disabled"
     fi
@@ -1695,10 +1695,10 @@ installKubeletKubectlAndKubeProxy() {
         if (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) >= 17)) && [ -n "${KUBE_BINARY_URL}" ]; then
             extractKubeBinaries ${KUBERNETES_VERSION} ${KUBE_BINARY_URL}
         else
-            if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
-                extractHyperkube "docker"
+            if [[ "$CONTAINER_RUNTIME" == "containerd" ]]; then
+                extractHyperkube "ctr"
             else
-                extractHyperkube "containerd"
+                extractHyperkube "docker"
             fi
         fi
     fi
@@ -1768,9 +1768,9 @@ cleanUpHyperkubeImages() {
 cleanUpKubeProxyImages() {
     echo $(date),$(hostname), startCleanUpKubeProxyImages
     {{if NeedsContainerd}}
-    function cleanUpHyperkubeImagesRun() {
+    function cleanUpKubeProxyImagesRun() {
         if [[ ! -s /var/run/containerd/containerd.sock ]]; then
-            echo "cleanUpHyperkubeImagesRun: containerd not running, exiting early" 
+            echo "cleanUpKubeProxyImagesRun: containerd not running, exiting early" 
             exit
         fi
         images_to_delete=$(ctr --namespace k8s.io images list | grep -vE "${KUBERNETES_VERSION}$|${KUBERNETES_VERSION}.[0-9]+$|${KUBERNETES_VERSION}-|${KUBERNETES_VERSION}_" | grep 'kube-proxy' | awk '{print $1}')
@@ -1785,9 +1785,9 @@ cleanUpKubeProxyImages() {
         fi
     }
     {{else}}
-    function cleanUpHyperkubeImagesRun() {
+    function cleanUpKubeProxyImagesRun() {
         if [[ ! -s /var/run/docker.sock ]]; then
-            echo "cleanUpHyperkubeImagesRun: docker not running, exiting early"
+            echo "cleanUpKubeProxyImagesRun: docker not running, exiting early"
             exit
         fi
         images_to_delete=$(docker images --format '{{OpenBraces}}.Repository{{CloseBraces}}:{{OpenBraces}}.Tag{{CloseBraces}}' | grep -vE "${KUBERNETES_VERSION}$|${KUBERNETES_VERSION}.[0-9]+$|${KUBERNETES_VERSION}-|${KUBERNETES_VERSION}_" | grep 'kube-proxy')
@@ -3719,6 +3719,8 @@ write_files:
     conf_dir = "/etc/cni/net.d"
     conf_template = "/etc/containerd/kubenet_template.conf"
     {{- end}}
+    [plugins."io.containerd.grpc.v1.cri".registry.headers]
+      X-Meta-Source-Client = ["azure/aks"]
     [metrics]
     address = "127.0.0.1:10257"
     #EOF

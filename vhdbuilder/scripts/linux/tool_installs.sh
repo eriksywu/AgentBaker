@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC1072,SC1073,SC1127,SC1072
 {{/* BCC/BPF-related error codes */}} 
 ERR_IOVISOR_KEY_DOWNLOAD_TIMEOUT=168 {{/* Timeout waiting to download IOVisor repo key */}}
 ERR_IOVISOR_APT_KEY_TIMEOUT=169 {{/* Timeout waiting for IOVisor apt-key */}}

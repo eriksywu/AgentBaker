@@ -251,10 +251,10 @@ installKubeletKubectlAndKubeProxy() {
         if (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) >= 17)) && [ -n "${KUBE_BINARY_URL}" ]; then
             extractKubeBinaries ${KUBERNETES_VERSION} ${KUBE_BINARY_URL}
         else
-            if [[ "$CONTAINER_RUNTIME" == "docker" ]]; then
-                extractHyperkube "docker"
+            if [[ "$CONTAINER_RUNTIME" == "containerd" ]]; then
+                extractHyperkube "ctr"
             else
-                extractHyperkube "containerd"
+                extractHyperkube "docker"
             fi
         fi
     fi
@@ -314,9 +314,9 @@ cleanUpHyperkubeImages() {
 cleanUpKubeProxyImages() {
     echo $(date),$(hostname), startCleanUpKubeProxyImages
     
-    function cleanUpHyperkubeImagesRun() {
+    function cleanUpKubeProxyImagesRun() {
         if [[ ! -s /var/run/containerd/containerd.sock ]]; then
-            echo "cleanUpHyperkubeImagesRun: containerd not running, exiting early" 
+            echo "cleanUpKubeProxyImagesRun: containerd not running, exiting early" 
             exit
         fi
         images_to_delete=$(ctr --namespace k8s.io images list | grep -vE "${KUBERNETES_VERSION}$|${KUBERNETES_VERSION}.[0-9]+$|${KUBERNETES_VERSION}-|${KUBERNETES_VERSION}_" | grep 'kube-proxy' | awk '{print $1}')

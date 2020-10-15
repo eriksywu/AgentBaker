@@ -54,24 +54,24 @@ if [[ ${UBUNTU_RELEASE} == "18.04" ]]; then
 fi
 
 if [[ ${CONTAINER_RUNTIME:-""} == "containerd" ]]; then
-  echo "VHD will be built with containerd as runtime" >> ${VHD_LOGS_FILEPATH}
-else
-  CONTAINER_RUNTIME="docker"
-  echo "VHD will be built with docker as runtime" >> ${VHD_LOGS_FILEPATH}
-fi
-
-installBpftrace
-echo "  - bpftrace" >> ${VHD_LOGS_FILEPATH}
-
-if [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
+  echo "VHD will be built with containerd as the container runtime" >> ${VHD_LOGS_FILEPATH}
   CONTAINERD_VERSION="1.4.1"
   installStandaloneContainerd
   echo "  - containerd v${CONTAINERD_VERSION}" >> ${VHD_LOGS_FILEPATH}
-else 
+  CRICTL_VERSION="v1.17.0"
+  CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz"
+  installCrictl
+  echo "  - crictl version ${CRICTL_VERSION}" >> ${VHD_LOGS_FILEPATH}
+else
+  CONTAINER_RUNTIME="docker"
+  echo "VHD will be built with docker as container runtime" >> ${VHD_LOGS_FILEPATH}
   MOBY_VERSION="19.03.12"
   installMoby
   echo "  - moby v${MOBY_VERSION}" >> ${VHD_LOGS_FILEPATH}
 fi
+
+installBpftrace
+echo "  - bpftrace" >> ${VHD_LOGS_FILEPATH}
 
 if [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
   # start up a bg containerd process if not yet started
@@ -128,14 +128,6 @@ for CNI_PLUGIN_VERSION in $CNI_PLUGIN_VERSIONS; do
     downloadCNI
     echo "  - CNI plugin version ${CNI_PLUGIN_VERSION}" >> ${VHD_LOGS_FILEPATH}
 done
-
-
-if [[ "${CONTAINER_RUNTIME}" == "containerd" ]]; then
-  CRICTL_VERSION="v1.17.0"
-  CRICTL_DOWNLOAD_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz"
-  installCrictl
-  echo "  - crictl version ${CRICTL_VERSION}" >> ${VHD_LOGS_FILEPATH}
-fi
 
 # pre-pull system images 
 pullSystemImages ${CONTAINER_RUNTIME}

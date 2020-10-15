@@ -242,6 +242,8 @@ write_files:
     conf_dir = "/etc/cni/net.d"
     conf_template = "/etc/containerd/kubenet_template.conf"
     {{- end}}
+    [plugins."io.containerd.grpc.v1.cri".registry.headers]
+      X-Meta-Source-Client = ["azure/aks"]
     [metrics]
     address = "127.0.0.1:10257"
     #EOF
