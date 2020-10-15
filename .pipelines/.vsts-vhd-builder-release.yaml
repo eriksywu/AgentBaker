@@ -60,7 +60,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_DS2_v2'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]docker'
-          echo '##vso[task.setvariable variable=SKU_NAME]1604'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -165,9 +164,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -204,7 +207,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_DS2_v2'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]docker'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -309,9 +311,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -348,7 +354,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_DS2_v2'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]docker'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gen2'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -453,9 +458,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -492,7 +501,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_NC6'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]docker'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gpu'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -597,9 +605,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -636,7 +648,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_NC6s_v3'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]docker'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gen2gpu'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -741,9 +752,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -780,7 +795,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_DS2_v2'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804containerd'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -885,9 +899,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -923,7 +941,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_DS2_v2'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]None'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gen2containerd'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -1028,9 +1045,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -1066,7 +1087,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_NC6'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gpucontainerd'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -1171,9 +1191,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
@@ -1209,7 +1233,6 @@ phases:
           echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_NC6s_v3'
           echo '##vso[task.setvariable variable=FEATURE_FLAGS]fullgpudaemon'
           echo '##vso[task.setvariable variable=CONTAINER_RUNTIME]containerd'
-          echo '##vso[task.setvariable variable=SKU_NAME]1804gen2gpucontainerd'
         displayName: Setup Build Variables
       - bash: |
           if [[ $(HYPERV_GENERATION) == "V2" ]]; then m="gen2Mode"; elif [[ -n ${SIG_GALLERY_NAME} && -n ${SIG_IMAGE_NAME} && -n ${SIG_IMAGE_VERSION} ]]; then m="sigMode"; else m="default"; fi && \
@@ -1314,9 +1337,13 @@ phases:
       - bash: |
           echo MODE=$(MODE) && \
           if [[ $(MODE) == "gen2Mode" ]]; then create_time="$(cat vhdbuilder/packer/settings.json | grep "create_time" | awk -F':' '{print $2}' | awk -F'"' '{print $2}')"; \
-          VHD_NAME="1.0.${create_time}.vhd"; else \
+          VHD_NAME="1.0.${create_time}.vhd"; \
+          SKU_NAME="1804gen2"; else \
           OS_DISK_SAS="$(cat packer-output | grep "OSDiskUriReadOnlySas:" | cut -d " " -f 2)"; \
-          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; fi && \
+          VHD_NAME="$(echo $OS_DISK_SAS | cut -d "/" -f 8 | cut -d "?" -f 1)"; \
+          SKU_NAME=$UBUNTU_SKU; fi && \
+          if [[ "$(FEATURE_FLAGS)" == *"fullgpu"* ]]; then SKU_NAME="${SKU_NAME}gpu"; fi && \
+          if [[ "$(CONTAINER_RUNTIME)" == "containerd" ]]; then SKU_NAME="${SKU_NAME}containerd"; fi && \
           docker run --rm \
           -v ${PWD}:/go/src/github.com/Azure/AgentBaker \
           -w /go/src/github.com/Azure/AgentBaker \
