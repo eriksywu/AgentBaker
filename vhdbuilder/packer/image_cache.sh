@@ -363,10 +363,6 @@ pullKubeComponents() {
     "
     for PATCHED_KUBERNETES_VERSION in ${K8S_VERSIONS}; do
         revVersion=$(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2)
-        # Only fetch 1.18 or higher for containerd
-        if [[ ${cliTool} == "ctr" ]] && ((${revVersion} < 18)); then
-            continue 
-        fi
         if ((${revVersion} < 17)); then
             HYPERKUBE_URL="mcr.microsoft.com/oss/kubernetes/hyperkube:v${PATCHED_KUBERNETES_VERSION}"
             # NOTE: the KUBERNETES_VERSION will be used to tag the extracted kubelet/kubectl in /usr/local/bin
@@ -434,10 +430,6 @@ pullKubeComponents() {
     "
     for KUBERNETES_VERSION in ${PATCHED_HYPERKUBE_IMAGES}; do
         revVersion=$(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2)
-        # Only fetch 1.18 or higher for containerd
-        if [[ ${cliTool} == "ctr" ]] && ((${revVersion} < 18)); then
-            continue 
-        fi
         # TODO: after CCP chart is done, change below to get hyperkube only for versions less than 1.17 only
         if (( ${revVersion} < 19)); then
             CONTAINER_IMAGE="mcr.microsoft.com/oss/kubernetes/hyperkube:v${KUBERNETES_VERSION}"
