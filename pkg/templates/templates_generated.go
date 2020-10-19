@@ -1603,7 +1603,7 @@ downloadCrictl() {
 installCrictl() {
     currentVersion=$(crictl --version 2>/dev/null)
     CRICTL_VERSION=${KUBERNETES_VERSION%.*}.0
-    if [[ currentVersion =~ ${CRICTL_VERSION} ]]; then  
+    if [[ ${currentVersion} =~ ${CRICTL_VERSION} ]]; then  
         echo "crictl with target version of ${CRICTL_VERSION} already installed. skipping installCrictl"
     else
         downloadCrictl
