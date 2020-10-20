@@ -1761,7 +1761,7 @@ cleanUpKubeProxyImages() {
     echo $(date),$(hostname), startCleanUpKubeProxyImages
     {{if NeedsContainerd}}
     function cleanUpKubeProxyImagesRun() {
-        if [[ ! -s /var/run/containerd/containerd.sock ]]; then
+        if [[ ! -S /var/run/containerd/containerd.sock ]]; then
             echo "cleanUpKubeProxyImagesRun: containerd not running, exiting early" 
             exit
         fi
@@ -1778,7 +1778,7 @@ cleanUpKubeProxyImages() {
     }
     {{else}}
     function cleanUpKubeProxyImagesRun() {
-        if [[ ! -s /var/run/docker.sock ]]; then
+        if [[ ! -S /var/run/docker.sock ]]; then
             echo "cleanUpKubeProxyImagesRun: docker not running, exiting early"
             exit
         fi

@@ -318,7 +318,7 @@ cleanUpKubeProxyImages() {
     echo $(date),$(hostname), startCleanUpKubeProxyImages
     
     function cleanUpKubeProxyImagesRun() {
-        if [[ ! -s /var/run/containerd/containerd.sock ]]; then
+        if [[ ! -S /var/run/containerd/containerd.sock ]]; then
             echo "cleanUpKubeProxyImagesRun: containerd not running, exiting early" 
             exit
         fi

@@ -292,7 +292,7 @@ cleanUpKubeProxyImages() {
     echo $(date),$(hostname), startCleanUpKubeProxyImages
     
     function cleanUpKubeProxyImagesRun() {
-        if [[ ! -s /var/run/docker.sock ]]; then
+        if [[ ! -S /var/run/docker.sock ]]; then
             echo "cleanUpKubeProxyImagesRun: docker not running, exiting early"
             exit
         fi
