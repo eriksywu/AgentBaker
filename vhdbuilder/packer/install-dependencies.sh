@@ -475,6 +475,10 @@ K8S_VERSIONS="
 1.19.1-hotfix.20200923
 "
 for PATCHED_KUBERNETES_VERSION in ${K8S_VERSIONS}; do
+  # Only need to store k8s components > 1.19 for containerd VHDs
+  if (($(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2) < 19)) && [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
+    continue
+  fi
   if (($(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2) < 17)); then
     HYPERKUBE_URL="mcr.microsoft.com/oss/kubernetes/hyperkube:v${PATCHED_KUBERNETES_VERSION}"
     # NOTE: the KUBERNETES_VERSION will be used to tag the extracted kubelet/kubectl in /usr/local/bin
@@ -534,6 +538,10 @@ PATCHED_HYPERKUBE_IMAGES="
 1.19.1-hotfix.20200923
 "
 for KUBERNETES_VERSION in ${PATCHED_HYPERKUBE_IMAGES}; do
+  # Only need to store k8s components > 1.19 for containerd VHDs
+  if (($(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2) < 19)) && [[ ${CONTAINER_RUNTIME} == "containerd" ]]; then
+    continue
+  fi
   # TODO: after CCP chart is done, change below to get hyperkube only for versions less than 1.17 only
   if (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) < 19)); then
       CONTAINER_IMAGE="mcr.microsoft.com/oss/kubernetes/hyperkube:v${KUBERNETES_VERSION}"
