@@ -96,12 +96,13 @@ function Test-FilesToCacheOnVHD
             "https://acs-mirror.azureedge.net/kubernetes/v1.18.9/windowszip/v1.18.9-1int.zip",
             "https://acs-mirror.azureedge.net/kubernetes/v1.19.0/windowszip/v1.19.0-1int.zip",
             "https://acs-mirror.azureedge.net/kubernetes/v1.19.1/windowszip/v1.19.1-1int.zip",
+            "https://acs-mirror.azureedge.net/kubernetes/v1.19.1-hotfix.20200923/windowszip/v1.19.1-hotfix.20200923-1int.zip",
             "https://acs-mirror.azureedge.net/kubernetes/v1.19.2/windowszip/v1.19.2-1int.zip"
         );
         "c:\akse-cache\win-vnet-cni\" = @(
-            "https://acs-mirror.azureedge.net/azure-cni/v1.1.2/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.1.2.zip",
             "https://acs-mirror.azureedge.net/azure-cni/v1.1.3/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.1.3.zip",
-            "https://acs-mirror.azureedge.net/azure-cni/v1.1.6/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.1.6.zip"
+            "https://acs-mirror.azureedge.net/azure-cni/v1.1.6/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.1.6.zip",
+            "https://acs-mirror.azureedge.net/azure-cni/v1.1.8/binaries/azure-vnet-cni-singletenancy-windows-amd64-v1.1.8.zip"
         )
     }
 
@@ -182,17 +183,17 @@ function Test-ImagesPulled
                 "mcr.microsoft.com/oss/kubernetes/pause:1.4.0",
                 "mcr.microsoft.com/oss/kubernetes-csi/livenessprobe:v2.0.1-alpha.1-windows-1809-amd64",
                 "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:v1.2.1-alpha.1-windows-1809-amd64")
-            Write-Log "Pulling images for windows server 2019"
+            Write-Output "Pulling images for windows server 2019"
         }
         '2004' {
             $imagesToPull = @(
                 "mcr.microsoft.com/windows/servercore:2004",
                 "mcr.microsoft.com/windows/nanoserver:2004",
                 "mcr.microsoft.com/oss/kubernetes/pause:1.4.0-windows-2004-amd64")
-            Write-Log "Pulling images for windows server core 2004"
+            Write-Output "Pulling images for windows server core 2004"
         }
         default {
-            Write-Log "No valid windows SKU is specified $WindowsSKU"
+            Write-Output "No valid windows SKU is specified $WindowsSKU"
             exit 1
         }
     }

@@ -223,7 +223,7 @@ pullSystemImages() {
     done
 
     # oms agent used by AKS
-    # keeping last released image (ciprod07152020 - hotfix) and current to be released image (ciprod08072020)
+    # keeping last released image (ciprod08072020) and current to be released image (ciprod10052020)
     OMS_AGENT_IMAGES="ciprod08072020 ciprod10052020"
     for OMS_AGENT_IMAGE in ${OMS_AGENT_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:${OMS_AGENT_IMAGE}"
@@ -233,8 +233,8 @@ pullSystemImages() {
 
     # calico images used by AKS
     CALICO_CNI_IMAGES="
-    v3.5.0
     v3.8.0
+    v3.8.9
     "
     for CALICO_CNI_IMAGE in ${CALICO_CNI_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/oss/calico/cni:${CALICO_CNI_IMAGE}"
@@ -243,8 +243,8 @@ pullSystemImages() {
     done
 
     CALICO_NODE_IMAGES="
-    v3.5.0
     v3.8.0
+    v3.8.9
     "
     for CALICO_NODE_IMAGE in ${CALICO_NODE_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/oss/calico/node:${CALICO_NODE_IMAGE}"
@@ -253,8 +253,8 @@ pullSystemImages() {
     done
 
     CALICO_TYPHA_IMAGES="
-    v3.5.0
     v3.8.0
+    v3.8.9
     "
     for CALICO_TYPHA_IMAGE in ${CALICO_TYPHA_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/oss/calico/typha:${CALICO_TYPHA_IMAGE}"
@@ -262,7 +262,10 @@ pullSystemImages() {
         echo "  - ${CONTAINER_IMAGE}" >> ${VHD_LOGS_FILEPATH}
     done
 
-    CALICO_POD2DAEMON_IMAGES="v3.8.0"
+    CALICO_POD2DAEMON_IMAGES="
+    v3.8.0
+    v3.8.9
+    "
     for CALICO_POD2DAEMON_IMAGE in ${CALICO_POD2DAEMON_IMAGES}; do
         CONTAINER_IMAGE="mcr.microsoft.com/oss/calico/pod2daemon-flexvol:${CALICO_POD2DAEMON_IMAGE}"
         pullContainerImage ${cliTool} ${CONTAINER_IMAGE}
@@ -297,6 +300,7 @@ pullSystemImages() {
     AKS_IP_MASQ_AGENT_VERSIONS="
     2.5.0
     2.5.0.1
+    2.5.0.2
     "
     for IP_MASQ_AGENT_VERSION in ${AKS_IP_MASQ_AGENT_VERSIONS}; do
         CONTAINER_IMAGE="mcr.microsoft.com/oss/kubernetes/ip-masq-agent:v${IP_MASQ_AGENT_VERSION}"
@@ -337,13 +341,14 @@ pullKubeComponents() {
     # below are the required to support versions
     # v1.16.13-hotfix.20200824.1
     # v1.16.15-hotfix.20200903
-    # v1.17.9-hotfix.20200824.1
     # v1.17.11-hotfix.20200901
-    # v1.18.6-hotfix.20200723.1
-    # v1.18.8
+    # v1.17.12
+    # v1.18.8-hotfix.20200924
+    # v1.18.9
+    # v1.19.0
+    # v1.19.1-hotfix.20200923
     # NOTE that we only keep the latest one per k8s patch version as kubelet/kubectl is decided by VHD version
     K8S_VERSIONS="
-    1.15.7-hotfix.20200326
     1.15.10-hotfix.20200408.1
     1.15.11-hotfix.20200824.1
     1.15.12-hotfix.20200824.1
@@ -355,11 +360,14 @@ pullKubeComponents() {
     1.17.7-hotfix.20200817.1
     1.17.9-hotfix.20200824.1
     1.17.11-hotfix.20200901
+    1.17.12
     1.18.2-hotfix.20200624.1
     1.18.4-hotfix.20200626.1
     1.18.6-hotfix.20200723.1
-    1.18.8
+    1.18.8-hotfix.20200924
+    1.18.9
     1.19.0
+    1.19.1-hotfix.20200923
     "
     for PATCHED_KUBERNETES_VERSION in ${K8S_VERSIONS}; do
         revVersion=$(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2)
@@ -395,38 +403,32 @@ pullKubeComponents() {
     # below are the required to support versions
     # v1.16.13-hotfix.20200824.1
     # v1.16.15-hotfix.20200903
-    # v1.17.9-hotfix.20200824.1
     # v1.17.11-hotfix.20200901
-    # v1.18.6-hotfix.20200723.1
-    # v1.18.8
-    # NOTE that we keep multiple files per k8s patch version as kubeproxy version is decided by CCP
+    # v1.17.12
+    # v1.18.8-hotfix.20200924
+    # v1.18.9
+    # v1.19.0
+    # v1.19.1-hotfix.20200923
+    # NOTE that we keep multiple files per k8s patch version as kubeproxy version is decided by CCP.
     PATCHED_HYPERKUBE_IMAGES="
     1.15.11-hotfix.20200529.1
     1.15.12-hotfix.20200623.1
-    1.15.12-hotfix.20200714.1
     1.16.9-hotfix.20200529.1
-    1.16.10-hotfix.20200623.1
-    1.16.10-hotfix.20200714.1
-    1.16.10-hotfix.20200817.1
     1.16.10-hotfix.20200824.1
-    1.16.13-hotfix.20200714.1
-    1.16.13-hotfix.20200817.1
     1.16.13-hotfix.20200824.1
     1.16.15-hotfix.20200903
     1.17.3-hotfix.20200601.1
-    1.17.7-hotfix.20200624
-    1.17.7-hotfix.20200714.1
     1.17.7-hotfix.20200714.2
-    1.17.9-hotfix.20200714.1
-    1.17.9-hotfix.20200817.1
     1.17.9-hotfix.20200824.1
     1.17.11-hotfix.20200901
-    1.18.4-hotfix.20200624
+    1.17.12
     1.18.4-hotfix.20200626.1
     1.18.6-hotfix.20200723.1
-    1.18.6
     1.18.8
+    1.18.8-hotfix.20200924
+    1.18.9
     1.19.0
+    1.19.1-hotfix.20200923
     "
     for KUBERNETES_VERSION in ${PATCHED_HYPERKUBE_IMAGES}; do
         revVersion=$(echo ${PATCHED_KUBERNETES_VERSION} | cut -d"." -f2)
@@ -489,6 +491,7 @@ pullAddonImages() {
     mcr.microsoft.com/oss/virtual-kubelet/virtual-kubelet:1.2.1.1
     mcr.microsoft.com/azure-policy/policy-kubernetes-addon-prod:prod_20200804.1
     mcr.microsoft.com/azure-policy/policy-kubernetes-addon-prod:prod_20200901.1
+    mcr.microsoft.com/azure-policy/policy-kubernetes-addon-prod:prod_20201015.1
     mcr.microsoft.com/azure-policy/policy-kubernetes-webhook:prod_20200505.3
     mcr.microsoft.com/azure-application-gateway/kubernetes-ingress:1.0.1-rc3
     "
