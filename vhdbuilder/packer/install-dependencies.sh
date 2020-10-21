@@ -279,7 +279,7 @@ if grep -q "fullgpu" <<< "$FEATURE_FLAGS" && grep -q "gpudaemon" <<< "$FEATURE_F
   DEST="/usr/local/nvidia/bin"
   mkdir -p $DEST
   if [[ "${CONTAINER_RUNTIME}" == "containerd" ]]; then
-    ctr run --rm --mount type=bind,src=${DEST},dst=${DEST},options=bind:rw --cwd ${DEST} "docker.io/nvidia/k8s-device-plugin:1.11" plugingextract /bin/sh -c "cp /usr/bin/nvidia-device-plugin $DEST" || exit 1   
+    ctr --namespace k8s.io run --rm --mount type=bind,src=${DEST},dst=${DEST},options=bind:rw --cwd ${DEST} "docker.io/nvidia/k8s-device-plugin:1.11" plugingextract /bin/sh -c "cp /usr/bin/nvidia-device-plugin $DEST" || exit 1   
   else
     docker run --rm --entrypoint "" -v $DEST:$DEST "nvidia/k8s-device-plugin:1.11" /bin/bash -c "cp /usr/bin/nvidia-device-plugin $DEST" || exit 1
   fi
