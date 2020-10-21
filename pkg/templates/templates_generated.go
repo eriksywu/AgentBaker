@@ -1779,6 +1779,16 @@ cleanUpContainerImages() {
     bash -c cleanUpKubeProxyImages &
 }
 
+removeContainerImage() {
+    CLI_TOOL=$1
+    CONTAINER_IMAGE_URL=$2
+    if [[ ${CLI_TOOL} == "ctr" ]]; then
+        ctr --namespace k8s.io image rm $CONTAINER_IMAGE_URL || exit $ERR_CONTAINER_IMG_PULL_TIMEOUT
+    else
+        ${CLI_TOOL} image rm $CONTAINER_IMAGE_URL || exit $ERR_CONTAINER_IMG_PULL_TIMEOUT
+    fi
+}
+
 cleanUpGPUDrivers() {
     rm -Rf $GPU_DEST
     rm -f /etc/apt/sources.list.d/nvidia-docker.list
